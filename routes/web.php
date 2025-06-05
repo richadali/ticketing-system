@@ -174,6 +174,11 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle')
         ->name('tickets.assign-to-me');
 
+    Route::post('/tickets/{ticket}/assign-to-admin', [TicketController::class, 'assignToAdmin'])
+        ->middleware('cache.headers')
+        ->middleware('throttle')
+        ->name('tickets.assign-to-admin');
+
     Route::post('/tickets/{ticket}/change-status', [TicketController::class, 'changeStatus'])
         ->middleware('cache.headers')
         ->middleware('throttle')

@@ -42,17 +42,80 @@
                             </div>
                             <div class="col-md-9">
                                 {{ $ticket->assignedTo ? $ticket->assignedTo->name : 'Unassigned' }}
-                                @if($role == 'Admin' && (!$ticket->assignedTo || $ticket->assignedTo->id != Auth::id()))
-                                <form action="{{ route('tickets.assign-to-me', $ticket) }}" method="POST"
-                                    class="d-inline ms-2">
-                                    @csrf
-                                    <button type="submit" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-person-check"></i> Assign to me
-                                    </button>
-                                </form>
+
+                                @if($role == 'Admin')
+                                <div class="mt-2">
+                                    <form action="{{ route('tickets.assign-to-admin', $ticket) }}" method="POST"
+                                        class="d-flex align-items-center">
+                                        @csrf
+                                        <select name="assigned_to" class="form-select me-2" style="width: auto;">
+                                            <option value="">-- Select Admin --</option>
+                                            @foreach($adminUsers as $admin)
+                                            <option value="{{ $admin->id }}" {{ $ticket->assigned_to == $admin->id ?
+                                                'selected' : '' }}>
+                                                {{ $admin->name }}
+                                            </option>
+                                            @endforeach
+                                        </select>
+                                        <button type="submit" class="btn btn-primary btn-sm">
+                                            <i class="bi bi-person-check"></i> Assign
+                                        </button>
+                                    </form>
+                                </div>
                                 @endif
                             </div>
                         </div>
+
+                        @if($ticket->status == 'closed' && $ticket->closed_at)
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <strong>Closed At:</strong>
+                            </div>
+                            <div class="col-md-9">
+                                <span class="badge bg-secondary p-2">
+                                    <i class="bi bi-lock-fill me-1"></i>
+                                    @if(is_string($ticket->closed_at))
+                                    {{ $ticket->closed_at }}
+                                    @else
+                                    {{ $ticket->closed_at->format('d M Y, h:i A') }}
+                                    @endif
+                                </span>
+                            </div>
+                        </div>
+                        @endif
+
+                        @if($ticket->deadline)
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <strong>Deadline:</strong>
+                            </div>
+                            <div class="col-md-9">
+                                @php
+                                $deadlineDate = $ticket->deadline;
+                                $today = \Carbon\Carbon::now()->startOfDay();
+                                $daysLeft = $today->diffInDays($deadlineDate, false);
+                                @endphp
+
+                                @if($daysLeft < 0) <span class="badge bg-danger p-2">
+                                    <i class="bi bi-calendar-x me-1"></i>
+                                    {{ $ticket->deadline->format('d M Y') }}
+                                    <small>({{ abs($daysLeft) }} days overdue)</small>
+                                    </span>
+                                    @elseif($daysLeft <= 2) <span class="badge bg-warning p-2">
+                                        <i class="bi bi-calendar-check me-1"></i>
+                                        {{ $ticket->deadline->format('d M Y') }}
+                                        <small>({{ $daysLeft }} days left)</small>
+                                        </span>
+                                        @else
+                                        <span class="badge bg-info p-2">
+                                            <i class="bi bi-calendar me-1"></i>
+                                            {{ $ticket->deadline->format('d M Y') }}
+                                            <small>({{ $daysLeft }} days left)</small>
+                                        </span>
+                                        @endif
+                            </div>
+                        </div>
+                        @endif
 
                         @if($role == 'Admin')
                         <div class="row mb-4">

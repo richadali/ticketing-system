@@ -50,10 +50,14 @@
                                 </div>
                             </div>
 
-                            <!-- Removed Assign To field -->
-
                             <div class="row mb-3">
-                                <div class="col-md-12">
+                                <div class="col-md-6">
+                                    <label for="deadline" class="form-label"><b>Deadline</b></label>
+                                    <input type="date" class="form-control" id="deadline" name="deadline"
+                                        value="{{ old('deadline') }}" min="{{ date('Y-m-d') }}" required>
+                                    <small class="text-muted">Set a target date for this ticket to be resolved.</small>
+                                </div>
+                                <div class="col-md-6">
                                     <label for="attachments" class="form-label"><b>Attachments (Optional)</b></label>
                                     <input type="file" class="form-control" id="attachments" name="attachments[]"
                                         multiple accept="image/*">

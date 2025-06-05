@@ -26,7 +26,7 @@
                                     <div class="mb-3">
                                         <label for="email" class="form-label">{{ __('Email') }}</label>
                                         <div class="input-group has-validation">
-                                            <span class="input-group-text" id="inputGroupPrepend">@</span>
+                                            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
                                             <input id="email" type="email"
                                                 class="form-control @error('email') is-invalid @enderror" name="email"
                                                 value="{{ old('email') }}" required autocomplete="email" autofocus>
@@ -65,7 +65,7 @@
                         </div>
                     </div>
                     <div class="card-footer text-center">
-                        Designed and Developed by Artec Engine
+                        Developed by Artec Engine
                     </div>
                 </div>
             </div>

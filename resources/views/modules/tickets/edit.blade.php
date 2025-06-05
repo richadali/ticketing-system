@@ -49,30 +49,19 @@
                                 </div>
                             </div>
 
-                            @if($role == 'Admin')
                             <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label for="status" class="form-label"><b>Status</b></label>
-                                    <select class="form-select" id="status" name="status" required>
-                                        <option value="open" {{ old('status', $ticket->status) == 'open' ? 'selected' :
-                                            '' }}>Open</option>
-                                        <option value="in_progress" {{ old('status', $ticket->status) == 'in_progress' ?
-                                            'selected' : '' }}>In Progress</option>
-                                        <option value="closed" {{ old('status', $ticket->status) == 'closed' ?
-                                            'selected' : '' }}>Closed</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="assigned_to" class="form-label"><b>Assign To</b></label>
-                                    <select class="form-select" id="assigned_to" name="assigned_to">
-                                        <option value="">-- Unassigned --</option>
-                                        @foreach($users as $user)
-                                        <option value="{{ $user->id }}" {{ old('assigned_to', $ticket->assigned_to) ==
-                                            $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
-                                        @endforeach
-                                    </select>
+                                <div class="col-md-12">
+                                    <label for="deadline" class="form-label"><b>Deadline</b></label>
+                                    <input type="date" class="form-control" id="deadline" name="deadline"
+                                        value="{{ old('deadline', $ticket->deadline ? $ticket->deadline->format('Y-m-d') : '') }}"
+                                        required>
+                                    <small class="text-muted">Set a target date for this ticket to be resolved.</small>
                                 </div>
                             </div>
+
+                            @if($role == 'Admin')
+                            <input type="hidden" name="status" value="{{ $ticket->status }}">
+                            <input type="hidden" name="assigned_to" value="{{ $ticket->assigned_to }}">
                             @else
                             <input type="hidden" name="status" value="open">
                             <input type="hidden" name="assigned_to" value="{{ $ticket->assigned_to }}">

@@ -26,25 +26,39 @@
 
                         @if(isset($statuses))
                         <div class="row mb-4">
-                            <div class="col-md-6">
-                                <form action="{{ route('tickets.index') }}" method="GET" class="d-flex">
-                                    <select name="status" class="form-select me-2">
-                                        @foreach($statuses as $key => $value)
-                                        <option value="{{ $key }}" {{ request('status')==$key ? 'selected' : '' }}>{{
-                                            $value }}</option>
-                                        @endforeach
-                                    </select>
+                            <div class="col-md-8">
+                                <form action="{{ route('tickets.index') }}" method="GET"
+                                    class="d-flex align-items-center flex-wrap">
+                                    <div class="me-3 mb-2">
+                                        <select name="status" class="form-select">
+                                            @foreach($statuses as $key => $value)
+                                            <option value="{{ $key }}" {{ request('status')==$key ? 'selected' : '' }}>
+                                                {{
+                                                $value }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
 
                                     @if($role == 'Admin' && isset($adminFilters))
-                                    <select name="filter" class="form-select me-2">
-                                        @foreach($adminFilters as $key => $value)
-                                        <option value="{{ $key }}" {{ request('filter')==$key ? 'selected' : '' }}>{{
-                                            $value }}</option>
-                                        @endforeach
-                                    </select>
+                                    <div class="me-3 mb-2">
+                                        <select name="filter" class="form-select">
+                                            @foreach($adminFilters as $key => $value)
+                                            <option value="{{ $key }}" {{ request('filter')==$key ? 'selected' : '' }}>
+                                                {{
+                                                $value }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                     @endif
 
-                                    <button type="submit" class="btn btn-primary">Filter</button>
+                                    <div class="form-check form-switch me-3 mb-2">
+                                        <input class="form-check-input" type="checkbox" name="show_closed"
+                                            id="showClosed" {{ isset($showClosed) && $showClosed ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="showClosed"><strong>Show Closed
+                                                Tickets</strong></label>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary mb-2">Apply Filters</button>
                                 </form>
                             </div>
                         </div>
@@ -73,6 +87,8 @@
                                         <th class="text-center">Status</th>
                                         <th class="text-center">Assigned To</th>
                                         <th class="text-center">Created At</th>
+                                        <th class="text-center">Closed At</th>
+                                        <th class="text-center">Deadline</th>
                                         <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
@@ -90,15 +106,64 @@
                                         <td class="text-center">
                                             <span class="badge bg-{{ 
                                                 $ticket->status == 'open' ? 'success' : 
-                                                ($ticket->status == 'in_progress' ? 'warning' : 
-                                                ($ticket->status == 'resolved' ? 'info' : 'secondary')) 
-                                            }}">
+                                                ($ticket->status == 'in_progress' ? 'warning' : 'secondary')
+                                            }} p-2">
+                                                @if($ticket->status == 'closed')
+                                                <i class="bi bi-lock-fill me-1"></i>
+                                                @elseif($ticket->status == 'open')
+                                                <i class="bi bi-exclamation-circle-fill me-1"></i>
+                                                @elseif($ticket->status == 'in_progress')
+                                                <i class="bi bi-hourglass-split me-1"></i>
+                                                @else
+                                                <i class="bi bi-check-circle-fill me-1"></i>
+                                                @endif
                                                 {{ ucfirst(str_replace('_', ' ', $ticket->status)) }}
                                             </span>
                                         </td>
                                         <td class="text-center">{{ $ticket->assignedTo ? $ticket->assignedTo->name :
                                             'Unassigned' }}</td>
                                         <td class="text-center">{{ $ticket->created_at->format('d M Y, h:i A') }}</td>
+                                        <td class="text-center">
+                                            @if($ticket->closed_at)
+                                            <span class="badge bg-secondary p-2">
+                                                @if(is_string($ticket->closed_at))
+                                                {{ $ticket->closed_at }}
+                                                @else
+                                                {{ $ticket->closed_at->format('d M Y, h:i A') }}
+                                                @endif
+                                            </span>
+                                            @else
+                                            <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @if($ticket->deadline)
+                                            @php
+                                            $deadlineDate = $ticket->deadline;
+                                            $today = \Carbon\Carbon::now()->startOfDay();
+                                            $daysLeft = $today->diffInDays($deadlineDate, false);
+                                            @endphp
+
+                                            @if($daysLeft < 0) <span class="badge bg-danger p-2">
+
+                                                {{ $ticket->deadline->format('d M Y') }}
+                                                <small>(Overdue)</small>
+                                                </span>
+                                                @elseif($daysLeft <= 2) <span class="badge bg-warning p-2">
+
+                                                    {{ $ticket->deadline->format('d M Y') }}
+                                                    <small>(Soon)</small>
+                                                    </span>
+                                                    @else
+                                                    <span class="badge bg-info p-2">
+
+                                                        {{ $ticket->deadline->format('d M Y') }}
+                                                    </span>
+                                                    @endif
+                                                    @else
+                                                    <span class="text-muted">-</span>
+                                                    @endif
+                                        </td>
                                         <td class="text-center">
                                             <a href="{{ route('tickets.show', $ticket->id) }}"
                                                 class="btn btn-info btn-sm">
@@ -127,7 +192,7 @@
                                     </tr>
                                     @empty
                                     <tr id="empty-row">
-                                        <td colspan="6" class="text-center">No tickets found</td>
+                                        <td colspan="7" class="text-center">No tickets found</td>
                                     </tr>
                                     @endforelse
                                 </tbody>
@@ -161,7 +226,7 @@
                 autoWidth: false,
                 order: [[0, 'asc']],
                 columnDefs: [
-                    { orderable: false, targets: 5 } // Disable sorting on the Actions column
+                    { orderable: false, targets: 6 } // Disable sorting on the Actions column
                 ]
             });
         } else {

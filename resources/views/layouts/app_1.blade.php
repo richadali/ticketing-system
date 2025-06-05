@@ -59,14 +59,45 @@
     <nav class="header-nav ms-auto">
       <ul class="d-flex align-items-center">
         <!-- Display Username and Role -->
-        <li class="nav-item pe-3">
-          <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#">
+        <li class="nav-item dropdown pe-3">
+          <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#" data-bs-toggle="dropdown">
+            <i class="bi bi-person-circle"></i>
             <span class="d-none d-md-block ps-2">
               <!-- Display user's name and role from backend -->
               Welcome, {{ auth()->user()->name }}
               <small class="text-muted"> ({{auth()->user()->role->name }})</small>
             </span>
+            <i class="bi bi-chevron-down ms-2"></i>
           </a>
+
+          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
+            <li class="dropdown-header">
+              <h6>{{ auth()->user()->name }}</h6>
+              <span>{{auth()->user()->role->name }}</span>
+            </li>
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+            <li>
+              <a class="dropdown-item d-flex align-items-center" href="{{ route('change-password') }}">
+                <i class="bi bi-key"></i>
+                <span>Change Password</span>
+              </a>
+            </li>
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+            <li>
+              <a class="dropdown-item d-flex align-items-center" href="{{ route('logout') }}"
+                onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Logout</span>
+              </a>
+              <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
+                @csrf
+              </form>
+            </li>
+          </ul>
         </li>
       </ul>
     </nav><!-- End Icons Navigation -->

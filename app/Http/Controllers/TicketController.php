@@ -33,9 +33,15 @@ class TicketController extends Controller
         // Start with a base query
         $query = Ticket::with(['assignedTo', 'attachments', 'creator']);
 
-        // Apply filters if provided
+        // Filter by status if provided
         if ($request->has('status') && $request->status != 'all') {
             $query->where('status', $request->status);
+        }
+
+        // Show/hide closed tickets based on checkbox
+        $showClosed = $request->has('show_closed');
+        if (!$showClosed) {
+            $query->where('status', '!=', 'closed');
         }
 
         // For regular users, only show tickets they created
@@ -60,7 +66,7 @@ class TicketController extends Controller
         $tickets = $query->latest()->get();
 
         // Get statuses for filter dropdown
-        $statuses = ['all' => 'All', 'open' => 'Open', 'in_progress' => 'In Progress', 'resolved' => 'Resolved', 'closed' => 'Closed'];
+        $statuses = ['all' => 'All', 'open' => 'Open', 'in_progress' => 'In Progress', 'closed' => 'Closed'];
 
         // Admin-specific filters
         $adminFilters = [
@@ -70,7 +76,7 @@ class TicketController extends Controller
             'created_by_me' => 'Created by Me'
         ];
 
-        return view('modules.tickets.index', compact('role', 'tickets', 'statuses', 'adminFilters'));
+        return view('modules.tickets.index', compact('role', 'tickets', 'statuses', 'adminFilters', 'showClosed'));
     }
 
     /**
@@ -95,6 +101,7 @@ class TicketController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'required|string',
+            'deadline' => 'required|date|after_or_equal:today',
             'attachments.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
@@ -103,6 +110,7 @@ class TicketController extends Controller
         $ticket->description = $request->description;
         $ticket->status = 'open';
         $ticket->created_by = Auth::id();
+        $ticket->deadline = $request->deadline;
         $ticket->save();
 
         // Record ticket creation activity
@@ -136,7 +144,15 @@ class TicketController extends Controller
     {
         $role = Auth::user()->role ? Auth::user()->role->name : 'User';
         $ticket->load('assignedTo', 'attachments', 'activities.user', 'creator');
-        return view('modules.tickets.show', compact('ticket', 'role'));
+
+        $adminUsers = [];
+        if ($role === 'Admin') {
+            $adminUsers = User::whereHas('role', function ($query) {
+                $query->where('name', 'Admin');
+            })->get();
+        }
+
+        return view('modules.tickets.show', compact('ticket', 'role', 'adminUsers'));
     }
 
     /**
@@ -196,12 +212,13 @@ class TicketController extends Controller
             'description' => 'required|string',
             'status' => 'required|in:open,in_progress,closed',
             'assigned_to' => 'nullable|exists:users,id',
+            'deadline' => 'required|date',
         ]);
 
-        // Regular users can only edit name and description, not status or assignment
+        // Regular users can only edit name, description and deadline, not status or assignment
         if ($role !== 'Admin') {
             // Track changes to name and description
-            if ($ticket->name != $request->name || $ticket->description != $request->description) {
+            if ($ticket->name != $request->name || $ticket->description != $request->description || $ticket->deadline != $request->deadline) {
                 $this->recordActivity(
                     $ticket,
                     'updated',
@@ -212,6 +229,7 @@ class TicketController extends Controller
             // Update only name and description
             $ticket->name = $request->name;
             $ticket->description = $request->description;
+            $ticket->deadline = $request->deadline;
             $ticket->save();
         } else {
             // Track status change - only for closed
@@ -223,6 +241,9 @@ class TicketController extends Controller
                     $ticket->status,
                     $request->status
                 );
+
+                // Set closed_at timestamp when ticket is closed
+                $ticket->closed_at = now();
             }
 
             // Track assignment change
@@ -241,6 +262,7 @@ class TicketController extends Controller
             $ticket->description = $request->description;
             $ticket->status = $request->status;
             $ticket->assigned_to = $request->assigned_to;
+            $ticket->deadline = $request->deadline;
             $ticket->save();
         }
 
@@ -350,6 +372,15 @@ class TicketController extends Controller
 
         $oldStatus = $ticket->status;
         $ticket->status = $request->status;
+
+        // Set closed_at timestamp when ticket is closed
+        if ($request->status == 'closed' && $oldStatus != 'closed') {
+            $ticket->closed_at = now();
+        } elseif ($request->status != 'closed' && $oldStatus == 'closed') {
+            // Clear closed_at if reopening a ticket
+            $ticket->closed_at = null;
+        }
+
         $ticket->save();
 
         // Record activity
@@ -362,5 +393,67 @@ class TicketController extends Controller
         );
 
         return redirect()->route('tickets.show', $ticket)->with('success', 'Ticket status updated successfully.');
+    }
+
+    /**
+     * Assign a ticket to another admin.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Ticket  $ticket
+     * @return \Illuminate\Http\Response
+     */
+    public function assignToAdmin(Request $request, Ticket $ticket)
+    {
+        $user = Auth::user();
+        $role = $user->role ? $user->role->name : 'User';
+
+        // Only admins can assign tickets
+        if ($role !== 'Admin') {
+            return redirect()->route('tickets.show', $ticket)->with('error', 'You do not have permission to assign tickets.');
+        }
+
+        $request->validate([
+            'assigned_to' => 'required|exists:users,id',
+        ]);
+
+        $oldAssignedTo = $ticket->assigned_to;
+        $assignedTo = $request->assigned_to;
+
+        // Skip if no change in assignment
+        if ($oldAssignedTo == $assignedTo) {
+            return redirect()->route('tickets.show', $ticket)->with('info', 'Ticket is already assigned to this user.');
+        }
+
+        // Update assigned_to
+        $ticket->assigned_to = $assignedTo;
+
+        // If ticket is open, change status to in_progress
+        $oldStatus = $ticket->status;
+        if ($ticket->status === 'open') {
+            $ticket->status = 'in_progress';
+        }
+
+        $ticket->save();
+
+        // Record assignment activity
+        $assignedToUser = User::find($assignedTo);
+        $this->recordActivity(
+            $ticket,
+            'assigned',
+            'Ticket was assigned to ' . $assignedToUser->name
+        );
+
+        // Record status change if status was changed
+        if ($oldStatus !== $ticket->status) {
+            $this->recordActivity(
+                $ticket,
+                'status_changed',
+                'Ticket status changed to in_progress',
+                $oldStatus,
+                'in_progress'
+            );
+        }
+
+        return redirect()->route('tickets.show', $ticket)->with('success', 'Ticket assigned successfully.');
     }
 }

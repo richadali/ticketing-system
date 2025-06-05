@@ -15,6 +15,18 @@ class Ticket extends Model
         'description',
         'assigned_to',
         'created_by',
+        'closed_at',
+        'deadline',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'closed_at' => 'datetime',
+        'deadline' => 'date',
     ];
 
     /**
