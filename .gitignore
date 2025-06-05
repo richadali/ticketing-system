@@ -1,7 +1,10 @@
 /node_modules
 /public/hot
 /public/storage
-/public/uploads
+/public/uploads/*
+!/public/uploads/tickets/
+/public/uploads/tickets/*
+!/public/uploads/tickets/.gitkeep
 /storage/*.key
 /vendor
 .phpunit.result.cache
