@@ -166,15 +166,15 @@
                                         </td>
                                         <td class="text-center">
                                             <a href="{{ route('tickets.show', $ticket->id) }}"
-                                                class="btn btn-info btn-sm">
-                                                <i class="bi bi-eye"></i> View
+                                                class="btn btn-info btn-sm" title="View Ticket Details">
+                                                <i class="bi bi-eye"></i>
                                             </a>
 
                                             @if(($role == 'Admin' || Auth::id() == $ticket->created_by) &&
                                             $ticket->status == 'open')
                                             <a href="{{ route('tickets.edit', $ticket->id) }}"
-                                                class="btn btn-primary btn-sm">
-                                                <i class="bi bi-pencil"></i> Edit
+                                                class="btn btn-primary btn-sm" title="Edit Ticket">
+                                                <i class="bi bi-pencil"></i>
                                             </a>
                                             @endif
                                             @if($role == 'Admin')
@@ -183,8 +183,9 @@
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-danger btn-sm"
+                                                    title="Delete Ticket"
                                                     onclick="return confirm('Are you sure you want to delete this ticket?')">
-                                                    <i class="bi bi-trash"></i> Delete
+                                                    <i class="bi bi-trash"></i>
                                                 </button>
                                             </form>
                                             @endif
@@ -192,7 +193,7 @@
                                     </tr>
                                     @empty
                                     <tr id="empty-row">
-                                        <td colspan="7" class="text-center">No tickets found</td>
+                                        <td colspan="8" class="text-center">No tickets found</td>
                                     </tr>
                                     @endforelse
                                 </tbody>
@@ -226,7 +227,7 @@
                 autoWidth: false,
                 order: [[0, 'asc']],
                 columnDefs: [
-                    { orderable: false, targets: 6 } // Disable sorting on the Actions column
+                    { orderable: false, targets: 7 } // Disable sorting on the Actions column
                 ]
             });
         } else {
