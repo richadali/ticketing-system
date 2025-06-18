@@ -10,29 +10,22 @@
     </li>
     @if ($role=='Admin')
     <li class="nav-item">
+      <a class="nav-link collapsed" href="{{ route('tickets.index') }}">
+        <i class="bi bi-ticket-detailed-fill"></i>
+        <span>All Tickets</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link collapsed" href="{{ route('tickets.create') }}">
+        <i class="bi bi-ticket-detailed-fill"></i>
+        <span>Create Ticket</span>
+      </a>
+    </li>
+    <li class="nav-item">
       <a class="nav-link collapsed" href="{{ route('user')}}">
         <i class="bi bi-person"></i>
         <span>User Management</span>
       </a>
-    </li>
-
-    <li class="nav-item">
-      <a class="nav-link collapsed" data-bs-target="#admin-tickets-nav" data-bs-toggle="collapse" href="#">
-        <i class="bi bi-ticket-detailed-fill"></i><span>Ticket Management</span><i
-          class="bi bi-chevron-down ms-auto"></i>
-      </a>
-      <ul id="admin-tickets-nav" class="nav-content collapse" data-bs-parent="#sidebar-nav">
-        <li>
-          <a href="{{ route('tickets.index') }}">
-            <i class="bi bi-circle"></i><span>All Tickets</span>
-          </a>
-        </li>
-        <li>
-          <a href="{{ route('tickets.create') }}">
-            <i class="bi bi-circle"></i><span>Create Ticket</span>
-          </a>
-        </li>
-      </ul>
     </li>
     @endif
 
@@ -185,21 +178,16 @@
 
     @if ($role=='User')
     <li class="nav-item">
-      <a class="nav-link collapsed" data-bs-target="#tickets-nav" data-bs-toggle="collapse" href="#">
-        <i class="bi bi-ticket-detailed"></i><span>Tickets</span><i class="bi bi-chevron-down ms-auto"></i>
+      <a class="nav-link collapsed" href="{{ route('tickets.index') }}">
+        <i class="bi bi-ticket-detailed"></i>
+        <span>All Tickets</span>
       </a>
-      <ul id="tickets-nav" class="nav-content collapse" data-bs-parent="#sidebar-nav">
-        <li>
-          <a href="{{ route('tickets.index') }}">
-            <i class="bi bi-circle"></i><span>All Tickets</span>
-          </a>
-        </li>
-        <li>
-          <a href="{{ route('tickets.create') }}">
-            <i class="bi bi-circle"></i><span>Create Ticket</span>
-          </a>
-        </li>
-      </ul>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link collapsed" href="{{ route('tickets.create') }}">
+        <i class="bi bi-ticket-detailed"></i>
+        <span>Create Ticket</span>
+      </a>
     </li>
     @endif
 

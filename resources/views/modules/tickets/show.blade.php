@@ -47,7 +47,7 @@
                                 <div class="mt-2">
                                     <form action="{{ route('tickets.assign-to-admin', $ticket) }}" method="POST"
                                         class="d-flex align-items-center">
-                                        @csrf
+                                    @csrf
                                         <select name="assigned_to" class="form-select me-2" style="width: auto;">
                                             <option value="">-- Select Admin --</option>
                                             @foreach($adminUsers as $admin)
@@ -59,8 +59,8 @@
                                         </select>
                                         <button type="submit" class="btn btn-primary btn-sm">
                                             <i class="bi bi-person-check"></i> Assign
-                                        </button>
-                                    </form>
+                                    </button>
+                                </form>
                                 </div>
                                 @endif
                             </div>

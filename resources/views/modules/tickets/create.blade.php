@@ -54,7 +54,8 @@
                                 <div class="col-md-6">
                                     <label for="deadline" class="form-label"><b>Deadline</b></label>
                                     <input type="date" class="form-control" id="deadline" name="deadline"
-                                        value="{{ old('deadline') }}" min="{{ date('Y-m-d') }}" required>
+                                        value="{{ old('deadline', date('Y-m-d', strtotime('+7 days'))) }}"
+                                        min="{{ date('Y-m-d') }}" required>
                                     <small class="text-muted">Set a target date for this ticket to be resolved.</small>
                                 </div>
                                 <div class="col-md-6">

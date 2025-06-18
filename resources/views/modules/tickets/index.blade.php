@@ -31,23 +31,23 @@
                                     class="d-flex align-items-center flex-wrap">
                                     <div class="me-3 mb-2">
                                         <select name="status" class="form-select">
-                                            @foreach($statuses as $key => $value)
+                                        @foreach($statuses as $key => $value)
                                             <option value="{{ $key }}" {{ request('status')==$key ? 'selected' : '' }}>
                                                 {{
-                                                $value }}</option>
-                                            @endforeach
-                                        </select>
+                                            $value }}</option>
+                                        @endforeach
+                                    </select>
                                     </div>
 
                                     @if($role == 'Admin' && isset($adminFilters))
                                     <div class="me-3 mb-2">
                                         <select name="filter" class="form-select">
-                                            @foreach($adminFilters as $key => $value)
+                                        @foreach($adminFilters as $key => $value)
                                             <option value="{{ $key }}" {{ request('filter')==$key ? 'selected' : '' }}>
                                                 {{
-                                                $value }}</option>
-                                            @endforeach
-                                        </select>
+                                            $value }}</option>
+                                        @endforeach
+                                    </select>
                                     </div>
                                     @endif
 
