@@ -22,6 +22,12 @@
       </a>
     </li>
     <li class="nav-item">
+      <a class="nav-link collapsed" href="{{ route('tickets.reports') }}">
+        <i class="bi bi-bar-chart-fill"></i>
+        <span>Reports</span>
+      </a>
+    </li>
+    <li class="nav-item">
       <a class="nav-link collapsed" href="{{ route('user')}}">
         <i class="bi bi-person"></i>
         <span>User Management</span>
@@ -187,6 +193,12 @@
       <a class="nav-link collapsed" href="{{ route('tickets.create') }}">
         <i class="bi bi-ticket-detailed"></i>
         <span>Create Ticket</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link collapsed" href="{{ route('tickets.reports') }}">
+        <i class="bi bi-bar-chart"></i>
+        <span>Reports</span>
       </a>
     </li>
     @endif

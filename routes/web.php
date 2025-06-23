@@ -184,6 +184,11 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle')
         ->name('tickets.change-status');
 
+    Route::get('/tickets-reports', [TicketController::class, 'reports'])
+        ->middleware('cache.headers')
+        ->middleware('throttle')
+        ->name('tickets.reports');
+
     // User Password Management
     Route::get('/change-password', [UserController::class, 'showChangePasswordForm'])
         ->middleware('cache.headers')

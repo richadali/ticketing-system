@@ -404,56 +404,71 @@ class TicketController extends Controller
      */
     public function assignToAdmin(Request $request, Ticket $ticket)
     {
+        // Validate request
+        $request->validate([
+            'admin_id' => 'required|exists:users,id',
+        ]);
+
         $user = Auth::user();
         $role = $user->role ? $user->role->name : 'User';
 
-        // Only admins can assign tickets
+        // Check permissions
         if ($role !== 'Admin') {
-            return redirect()->route('tickets.show', $ticket)->with('error', 'You do not have permission to assign tickets.');
+            return redirect()->route('tickets.show', $ticket)
+                ->with('error', 'Only admins can assign tickets.');
         }
 
-        $request->validate([
-            'assigned_to' => 'required|exists:users,id',
-        ]);
-
-        $oldAssignedTo = $ticket->assigned_to;
-        $assignedTo = $request->assigned_to;
-
-        // Skip if no change in assignment
-        if ($oldAssignedTo == $assignedTo) {
-            return redirect()->route('tickets.show', $ticket)->with('info', 'Ticket is already assigned to this user.');
-        }
-
-        // Update assigned_to
-        $ticket->assigned_to = $assignedTo;
-
-        // If ticket is open, change status to in_progress
-        $oldStatus = $ticket->status;
-        if ($ticket->status === 'open') {
-            $ticket->status = 'in_progress';
-        }
-
+        // Update ticket
+        $oldAssignee = $ticket->assigned_to;
+        $ticket->assigned_to = $request->admin_id;
         $ticket->save();
 
-        // Record assignment activity
-        $assignedToUser = User::find($assignedTo);
+        // Record activity
+        $newAdmin = User::find($request->admin_id);
+        $oldAdmin = $oldAssignee ? User::find($oldAssignee) : null;
+
         $this->recordActivity(
             $ticket,
             'assigned',
-            'Ticket was assigned to ' . $assignedToUser->name
+            'Ticket was assigned to ' . $newAdmin->name,
+            $oldAdmin ? $oldAdmin->name : 'Unassigned',
+            $newAdmin->name
         );
 
-        // Record status change if status was changed
-        if ($oldStatus !== $ticket->status) {
-            $this->recordActivity(
-                $ticket,
-                'status_changed',
-                'Ticket status changed to in_progress',
-                $oldStatus,
-                'in_progress'
-            );
+        return redirect()->route('tickets.show', $ticket)
+            ->with('success', 'Ticket assigned successfully.');
+    }
+
+    /**
+     * Display report of closed tickets with date filter
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function reports(Request $request)
+    {
+        $user = Auth::user();
+        $role = $user->role ? $user->role->name : 'User';
+
+        // Default to last 7 days
+        $defaultStartDate = now()->subDays(7)->format('Y-m-d');
+        $defaultEndDate = now()->format('Y-m-d');
+
+        $startDate = $request->input('start_date', $defaultStartDate);
+        $endDate = $request->input('end_date', $defaultEndDate);
+
+        // Start with a base query for closed tickets
+        $query = Ticket::where('status', 'closed')
+            ->whereBetween('closed_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->with(['assignedTo', 'creator', 'attachments']);
+
+        // For regular users, only show tickets they created
+        if ($role !== 'Admin') {
+            $query->where('created_by', $user->id);
         }
 
-        return redirect()->route('tickets.show', $ticket)->with('success', 'Ticket assigned successfully.');
+        $tickets = $query->latest('closed_at')->get();
+
+        return view('modules.tickets.reports', compact('role', 'tickets', 'startDate', 'endDate'));
     }
 }
