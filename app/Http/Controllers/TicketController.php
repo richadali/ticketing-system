@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\TicketActivity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class TicketController extends Controller
 {
@@ -440,7 +441,7 @@ class TicketController extends Controller
     }
 
     /**
-     * Display report of closed tickets with date filter
+     * Display report of tickets filtered by status and date range
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
@@ -457,9 +458,35 @@ class TicketController extends Controller
         $startDate = $request->input('start_date', $defaultStartDate);
         $endDate = $request->input('end_date', $defaultEndDate);
 
-        // Start with a base query for closed tickets
-        $query = Ticket::where('status', 'closed')
-            ->whereBetween('closed_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+        // Default status is closed if not provided
+        $status = $request->input('status', 'closed');
+        $validStatuses = ['open', 'in_progress', 'closed'];
+
+        // Validate status parameter
+        if (!in_array($status, $validStatuses)) {
+            $status = 'closed';
+        }
+
+        // Build title and description based on status
+        switch ($status) {
+            case 'open':
+                $reportTitle = 'Open Tickets Report';
+                $dateField = 'created_at'; // For open tickets, we filter by creation date
+                break;
+            case 'in_progress':
+                $reportTitle = 'In Progress Tickets Report';
+                $dateField = 'updated_at'; // For in progress tickets, we use last update date
+                break;
+            case 'closed':
+            default:
+                $reportTitle = 'Closed Tickets Report';
+                $dateField = 'closed_at'; // For closed tickets, we use closed date
+                break;
+        }
+
+        // Start with a base query for tickets with the selected status
+        $query = Ticket::where('status', $status)
+            ->whereBetween($dateField, [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
             ->with(['assignedTo', 'creator', 'attachments']);
 
         // For regular users, only show tickets they created
@@ -467,8 +494,50 @@ class TicketController extends Controller
             $query->where('created_by', $user->id);
         }
 
-        $tickets = $query->latest('closed_at')->get();
+        // Order by most recent relevant date
+        $tickets = $query->latest($dateField)->get();
 
-        return view('modules.tickets.reports', compact('role', 'tickets', 'startDate', 'endDate'));
+        // Check if PDF export is requested
+        if ($request->has('export_pdf')) {
+            return $this->exportToPdf($tickets, $startDate, $endDate, $reportTitle, $status);
+        }
+
+        return view('modules.tickets.reports', compact('role', 'tickets', 'startDate', 'endDate', 'status', 'reportTitle'));
+    }
+
+    /**
+     * Export tickets to PDF
+     *
+     * @param  \Illuminate\Database\Eloquent\Collection  $tickets
+     * @param  string  $startDate
+     * @param  string  $endDate
+     * @param  string  $reportTitle
+     * @param  string  $status
+     * @return \Illuminate\Http\Response
+     */
+    private function exportToPdf($tickets, $startDate, $endDate, $reportTitle, $status)
+    {
+        // Format dates for display
+        $formattedStartDate = date('d M Y', strtotime($startDate));
+        $formattedEndDate = date('d M Y', strtotime($endDate));
+
+        $data = [
+            'tickets' => $tickets,
+            'startDate' => $formattedStartDate,
+            'endDate' => $formattedEndDate,
+            'reportTitle' => $reportTitle,
+            'generatedAt' => now()->format('d M Y, h:i A')
+        ];
+
+        $pdf = Pdf::loadView('modules.tickets.pdf_report', $data);
+
+        // Set paper size and orientation
+        $pdf->setPaper('a4', 'landscape');
+
+        // Generate filename
+        $filename = strtolower(str_replace(' ', '_', $status)) . '_tickets_report_' . $startDate . '_to_' . $endDate . '.pdf';
+
+        // Return as download
+        return $pdf->download($filename);
     }
 }

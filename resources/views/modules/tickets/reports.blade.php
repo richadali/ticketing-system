@@ -9,7 +9,8 @@
         <nav>
             <ol class="breadcrumb">
                 <li class="breadcrumb-item">Ticket Management</li>
-                <li class="breadcrumb-item active">Reports</li>
+                <li class="breadcrumb-item">Reports</li>
+                <li class="breadcrumb-item active">{{ ucfirst($status) }} Tickets</li>
             </ol>
         </nav>
     </div><!-- End Page Title -->
@@ -19,12 +20,23 @@
                 <div class="card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="card-title mb-0">Closed Tickets Report</h5>
+                            <h5 class="card-title mb-0">{{ $reportTitle }}</h5>
+                            <div>
+                                <form action="{{ route('tickets.reports', ['status' => $status]) }}" method="GET"
+                                    class="d-inline">
+                                    <input type="hidden" name="start_date" value="{{ $startDate }}">
+                                    <input type="hidden" name="end_date" value="{{ $endDate }}">
+                                    <input type="hidden" name="export_pdf" value="1">
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="bi bi-file-earmark-pdf"></i> Export to PDF
+                                    </button>
+                                </form>
+                            </div>
                         </div>
 
                         <div class="row mb-4">
-                            <div class="col-md-8">
-                                <form action="{{ route('tickets.reports') }}" method="GET"
+                            <div class="col-md-12">
+                                <form action="{{ route('tickets.reports', ['status' => $status]) }}" method="GET"
                                     class="d-flex align-items-center flex-wrap">
                                     <div class="me-3 mb-2">
                                         <label for="start_date" class="form-label">From Date</label>
@@ -69,8 +81,13 @@
                                         <th class="text-center">Created By</th>
                                         <th class="text-center">Assigned To</th>
                                         <th class="text-center">Created At</th>
+                                        @if($status == 'closed')
                                         <th class="text-center">Closed At</th>
                                         <th class="text-center">Resolution Time</th>
+                                        @else
+                                        <th class="text-center">Last Updated</th>
+                                        <th class="text-center">Deadline</th>
+                                        @endif
                                         <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
@@ -90,6 +107,8 @@
                                         <td class="text-center">{{ $ticket->assignedTo ? $ticket->assignedTo->name :
                                             'Unassigned' }}</td>
                                         <td class="text-center">{{ $ticket->created_at->format('d M Y, h:i A') }}</td>
+
+                                        @if($status == 'closed')
                                         <td class="text-center">
                                             @if($ticket->closed_at)
                                             @if(is_string($ticket->closed_at))
@@ -123,6 +142,37 @@
                                             <span class="text-muted">-</span>
                                             @endif
                                         </td>
+                                        @else
+                                        <td class="text-center">
+                                            {{ $ticket->updated_at->format('d M Y, h:i A') }}
+                                        </td>
+                                        <td class="text-center">
+                                            @if($ticket->deadline)
+                                            @php
+                                            $deadlineDate = $ticket->deadline;
+                                            $today = \Carbon\Carbon::now()->startOfDay();
+                                            $daysLeft = $today->diffInDays($deadlineDate, false);
+                                            @endphp
+
+                                            @if($daysLeft < 0) <span class="badge bg-danger p-2">
+                                                {{ $ticket->deadline->format('d M Y') }}
+                                                <small>(Overdue)</small>
+                                                </span>
+                                                @elseif($daysLeft <= 2) <span class="badge bg-warning p-2">
+                                                    {{ $ticket->deadline->format('d M Y') }}
+                                                    <small>(Soon)</small>
+                                                    </span>
+                                                    @else
+                                                    <span class="badge bg-info p-2">
+                                                        {{ $ticket->deadline->format('d M Y') }}
+                                                    </span>
+                                                    @endif
+                                                    @else
+                                                    <span class="text-muted">-</span>
+                                                    @endif
+                                        </td>
+                                        @endif
+
                                         <td class="text-center">
                                             <a href="{{ route('tickets.show', $ticket->id) }}"
                                                 class="btn btn-info btn-sm" title="View">
@@ -132,8 +182,8 @@
                                     </tr>
                                     @empty
                                     <tr id="empty-row">
-                                        <td colspan="8" class="text-center">No closed tickets found for the selected
-                                            period</td>
+                                        <td colspan="8" class="text-center">No {{ strtolower($status) }} tickets found
+                                            for the selected period</td>
                                     </tr>
                                     @endforelse
                                 </tbody>
@@ -165,7 +215,7 @@
                 info: true,
                 responsive: true,
                 autoWidth: false,
-                order: [[5, 'desc']], // Sort by Closed At column by default
+                order: [[0, 'asc']],
                 columnDefs: [
                     { orderable: false, targets: 7 } // Disable sorting on the Actions column
                 ]

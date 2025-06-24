@@ -22,10 +22,26 @@
       </a>
     </li>
     <li class="nav-item">
-      <a class="nav-link collapsed" href="{{ route('tickets.reports') }}">
-        <i class="bi bi-bar-chart-fill"></i>
-        <span>Reports</span>
+      <a class="nav-link collapsed" data-bs-target="#reports-nav" data-bs-toggle="collapse" href="#">
+        <i class="bi bi-bar-chart-fill"></i><span>Reports</span><i class="bi bi-chevron-down ms-auto"></i>
       </a>
+      <ul id="reports-nav" class="nav-content collapse" data-bs-parent="#sidebar-nav">
+        <li>
+          <a href="{{ route('tickets.reports', ['status' => 'closed']) }}">
+            <i class="bi bi-circle"></i><span>Closed Tickets</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ route('tickets.reports', ['status' => 'open']) }}">
+            <i class="bi bi-circle"></i><span>Open Tickets</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ route('tickets.reports', ['status' => 'in_progress']) }}">
+            <i class="bi bi-circle"></i><span>In Progress Tickets</span>
+          </a>
+        </li>
+      </ul>
     </li>
     <li class="nav-item">
       <a class="nav-link collapsed" href="{{ route('user')}}">
@@ -196,10 +212,26 @@
       </a>
     </li>
     <li class="nav-item">
-      <a class="nav-link collapsed" href="{{ route('tickets.reports') }}">
-        <i class="bi bi-bar-chart"></i>
-        <span>Reports</span>
+      <a class="nav-link collapsed" data-bs-target="#reports-nav-user" data-bs-toggle="collapse" href="#">
+        <i class="bi bi-bar-chart"></i><span>Reports</span><i class="bi bi-chevron-down ms-auto"></i>
       </a>
+      <ul id="reports-nav-user" class="nav-content collapse" data-bs-parent="#sidebar-nav">
+        <li>
+          <a href="{{ route('tickets.reports', ['status' => 'closed']) }}">
+            <i class="bi bi-circle"></i><span>Closed Tickets</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ route('tickets.reports', ['status' => 'open']) }}">
+            <i class="bi bi-circle"></i><span>Open Tickets</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ route('tickets.reports', ['status' => 'in_progress']) }}">
+            <i class="bi bi-circle"></i><span>In Progress Tickets</span>
+          </a>
+        </li>
+      </ul>
     </li>
     @endif
 
