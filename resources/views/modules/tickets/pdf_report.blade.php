@@ -116,11 +116,11 @@
                 <th>#</th>
                 <th>Name</th>
                 <th>Created By</th>
+                <th>Category</th>
                 <th>Assigned To</th>
                 <th>Created At</th>
-                @if(str_contains($reportTitle, 'Closed'))
+                @if(isset($status) && $status == 'closed')
                 <th>Closed At</th>
-                <th>Resolution Time</th>
                 @else
                 <th>Last Updated</th>
                 <th>Deadline</th>
@@ -131,40 +131,24 @@
             @forelse($tickets as $key => $ticket)
             <tr>
                 <td>{{ $key + 1 }}</td>
-                <td>{{ $ticket->name }}</td>
+                <td>
+                    {{ $ticket->name }}
+                    @if($ticket->urgent)
+                    <span class="badge-danger" style="margin-left: 5px;">Urgent</span>
+                    @endif
+                </td>
                 <td>{{ $ticket->creator ? $ticket->creator->name : 'Unknown' }}</td>
+                <td>{{ $ticket->category ?? '-' }}</td>
                 <td>{{ $ticket->assignedTo ? $ticket->assignedTo->name : 'Unassigned' }}</td>
                 <td>{{ $ticket->created_at->format('d M Y, h:i A') }}</td>
 
-                @if(str_contains($reportTitle, 'Closed'))
+                @if(isset($status) && $status == 'closed')
                 <td>
                     @if($ticket->closed_at)
                     @if(is_string($ticket->closed_at))
                     {{ $ticket->closed_at }}
                     @else
                     {{ $ticket->closed_at->format('d M Y, h:i A') }}
-                    @endif
-                    @else
-                    -
-                    @endif
-                </td>
-                <td>
-                    @if($ticket->closed_at)
-                    @php
-                    if(is_string($ticket->closed_at)) {
-                    $closedAt = \Carbon\Carbon::parse($ticket->closed_at);
-                    } else {
-                    $closedAt = $ticket->closed_at;
-                    }
-                    $createdAt = $ticket->created_at;
-                    $diffInHours = $createdAt->diffInHours($closedAt);
-                    $diffInDays = floor($diffInHours / 24);
-                    $remainingHours = $diffInHours % 24;
-                    @endphp
-                    @if($diffInDays > 0)
-                    {{ $diffInDays }}d {{ $remainingHours }}h
-                    @else
-                    {{ $diffInHours }}h
                     @endif
                     @else
                     -

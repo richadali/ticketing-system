@@ -31,23 +31,23 @@
                                     class="d-flex align-items-center flex-wrap">
                                     <div class="me-3 mb-2">
                                         <select name="status" class="form-select">
-                                        @foreach($statuses as $key => $value)
+                                            @foreach($statuses as $key => $value)
                                             <option value="{{ $key }}" {{ request('status')==$key ? 'selected' : '' }}>
                                                 {{
-                                            $value }}</option>
-                                        @endforeach
-                                    </select>
+                                                $value }}</option>
+                                            @endforeach
+                                        </select>
                                     </div>
 
                                     @if($role == 'Admin' && isset($adminFilters))
                                     <div class="me-3 mb-2">
                                         <select name="filter" class="form-select">
-                                        @foreach($adminFilters as $key => $value)
+                                            @foreach($adminFilters as $key => $value)
                                             <option value="{{ $key }}" {{ request('filter')==$key ? 'selected' : '' }}>
                                                 {{
-                                            $value }}</option>
-                                        @endforeach
-                                    </select>
+                                                $value }}</option>
+                                            @endforeach
+                                        </select>
                                     </div>
                                     @endif
 
@@ -84,7 +84,6 @@
                                     <tr>
                                         <th class="text-center">#</th>
                                         <th class="text-center">Name</th>
-                                        <th class="text-center">Urgent</th>
                                         <th class="text-center">Status</th>
                                         <th class="text-center">Assigned To</th>
                                         <th class="text-center">Created At</th>
@@ -99,20 +98,13 @@
                                         <td class="text-center">{{ $key + 1 }}</td>
                                         <td class="text-center">
                                             {{ $ticket->name }}
-                                            @if($ticket->attachments && $ticket->attachments->count() > 0)
-                                            <i class="bi bi-paperclip ms-1"
-                                                title="{{ $ticket->attachments->count() }} attachment(s)"></i>
-                                            @endif
-                                        </td>
-                                        <td class="text-center">
                                             @if($ticket->urgent)
-                                            <span class="badge bg-danger">
+                                            <span class="badge bg-danger ms-1">
                                                 <i class="bi bi-exclamation-triangle-fill me-1"></i>
                                                 Urgent
                                             </span>
-                                            @else
-                                            <span class="text-muted">-</span>
                                             @endif
+
                                         </td>
                                         <td class="text-center">
                                             <span class="badge bg-{{ 
@@ -204,7 +196,7 @@
                                     </tr>
                                     @empty
                                     <tr id="empty-row">
-                                        <td colspan="9" class="text-center">No tickets found</td>
+                                        <td colspan="8" class="text-center">No tickets found</td>
                                     </tr>
                                     @endforelse
                                 </tbody>
@@ -226,6 +218,22 @@
                       !$('.tickets-table tbody tr#empty-row').length;
                       
         if (hasData) {
+            // Create a custom sorting function for deadline + urgent
+            $.fn.dataTable.ext.order['deadline-urgent'] = function (settings, col) {
+                return this.api().column(col, {order:'index'}).nodes().map(function (td, i) {
+                    // Get the deadline date from the cell
+                    var deadlineText = $(td).text().trim();
+                    var deadlineDate = deadlineText !== '-' ? deadlineText.split(' ')[0] + ' ' + deadlineText.split(' ')[1] + ' ' + deadlineText.split(' ')[2] : '9999-12-31';
+                    
+                    // Check if the row has an urgent badge
+                    var row = $(td).closest('tr');
+                    var isUrgent = row.find('td:eq(1) .badge.bg-danger').length > 0 ? '0' : '1'; // 0 sorts before 1
+                    
+                    // Return a sortable string: deadline date + urgent flag
+                    return deadlineDate + '_' + isUrgent;
+                });
+            };
+            
             $('.tickets-table').DataTable({
                 destroy: true,
                 processing: true,
@@ -236,10 +244,25 @@
                 info: true,
                 responsive: true,
                 autoWidth: false,
-                order: [[0, 'asc']],
+                order: [[6, 'asc']], // Sort by Deadline (ascending) by default
                 columnDefs: [
-                    { orderable: false, targets: 8 } // Disable sorting on the Actions column
-                ]
+                    { orderable: false, targets: 7 }, // Disable sorting on the Actions column
+                    {
+                        // Custom sorting for the Deadline column
+                        targets: 6,
+                        type: 'deadline-urgent'
+                    }
+                ],
+                // Add custom sorting to prioritize urgent tickets
+                createdRow: function(row, data, dataIndex) {
+                    // Get the urgent status from the name column
+                    var isUrgent = $(row).find('td:eq(1) .badge.bg-danger').length > 0;
+                    
+                    // Add a class to urgent rows for styling
+                    if (isUrgent) {
+                        $(row).addClass('urgent-ticket');
+                    }
+                }
             });
         } else {
             // For empty tables, add a simple class to maintain styling without DataTable initialization

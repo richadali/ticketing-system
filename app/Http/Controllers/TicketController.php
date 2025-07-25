@@ -63,8 +63,10 @@ class TicketController extends Controller
             }
         }
 
-        // Get tickets
-        $tickets = $query->latest()->get();
+        // Get tickets sorted by deadline and urgent status
+        $tickets = $query->orderBy('deadline', 'asc')  // First by deadline (ascending)
+                         ->orderBy('urgent', 'desc')   // Then urgent tickets first within each deadline
+                         ->get();
 
         // Get statuses for filter dropdown
         $statuses = ['all' => 'All', 'open' => 'Open', 'in_progress' => 'In Progress', 'closed' => 'Closed'];
@@ -220,12 +222,21 @@ class TicketController extends Controller
             'status' => 'required|in:open,in_progress,closed',
             'assigned_to' => 'nullable|exists:users,id',
             'deadline' => 'required|date',
+            'category' => 'required|string|in:Whitelabel,Reports,Website,Email,Domain,Others',
+            'sub_company' => 'required|string|in:CG,Teesprint',
+            'urgent' => 'nullable|boolean',
         ]);
 
-        // Regular users can only edit name, description and deadline, not status or assignment
+        // Regular users can only edit name, description, deadline, category, sub_company, and urgent flag
         if ($role !== 'Admin') {
-            // Track changes to name and description
-            if ($ticket->name != $request->name || $ticket->description != $request->description || $ticket->deadline != $request->deadline) {
+            // Track changes to ticket details
+            if ($ticket->name != $request->name ||
+                $ticket->description != $request->description ||
+                $ticket->deadline != $request->deadline ||
+                $ticket->category != $request->category ||
+                $ticket->sub_company != $request->sub_company ||
+                $ticket->urgent != $request->has('urgent')) {
+                
                 $this->recordActivity(
                     $ticket,
                     'updated',
@@ -233,10 +244,13 @@ class TicketController extends Controller
                 );
             }
 
-            // Update only name and description
+            // Update ticket details
             $ticket->name = $request->name;
             $ticket->description = $request->description;
             $ticket->deadline = $request->deadline;
+            $ticket->category = $request->category;
+            $ticket->sub_company = $request->sub_company;
+            $ticket->urgent = $request->has('urgent');
             $ticket->save();
         } else {
             // Track status change - only for closed
@@ -270,6 +284,9 @@ class TicketController extends Controller
             $ticket->status = $request->status;
             $ticket->assigned_to = $request->assigned_to;
             $ticket->deadline = $request->deadline;
+            $ticket->category = $request->category;
+            $ticket->sub_company = $request->sub_company;
+            $ticket->urgent = $request->has('urgent');
             $ticket->save();
         }
 
@@ -464,13 +481,21 @@ class TicketController extends Controller
         $startDate = $request->input('start_date', $defaultStartDate);
         $endDate = $request->input('end_date', $defaultEndDate);
 
-        // Default status is closed if not provided
-        $status = $request->input('status', 'closed');
+        // Get status from request, maintain it in session if valid
         $validStatuses = ['open', 'in_progress', 'closed'];
-
-        // Validate status parameter
-        if (!in_array($status, $validStatuses)) {
-            $status = 'closed';
+        $requestStatus = $request->input('status');
+        
+        if ($requestStatus && in_array($requestStatus, $validStatuses)) {
+            // Valid status provided in request, use it and store in session
+            $status = $requestStatus;
+            session(['report_status' => $status]);
+        } else if (session('report_status') && in_array(session('report_status'), $validStatuses)) {
+            // No valid status in request, but we have one in session
+            $status = session('report_status');
+        } else {
+            // Default to open if no valid status in request or session
+            $status = 'open';
+            session(['report_status' => $status]);
         }
 
         // Build title and description based on status
@@ -500,8 +525,18 @@ class TicketController extends Controller
             $query->where('created_by', $user->id);
         }
 
-        // Order by most recent relevant date
-        $tickets = $query->latest($dateField)->get();
+        // Order by deadline and urgent status
+        if ($status == 'closed') {
+            // For closed tickets, sort by closed date
+            $tickets = $query->orderBy($dateField, 'desc')
+                             ->orderBy('urgent', 'desc')
+                             ->get();
+        } else {
+            // For open/in-progress tickets, sort by deadline then urgent
+            $tickets = $query->orderBy('deadline', 'asc')    // First by deadline (ascending)
+                             ->orderBy('urgent', 'desc')     // Then urgent tickets first within each deadline
+                             ->get();
+        }
 
         // Check if PDF export is requested
         if ($request->has('export_pdf')) {
@@ -532,7 +567,8 @@ class TicketController extends Controller
             'startDate' => $formattedStartDate,
             'endDate' => $formattedEndDate,
             'reportTitle' => $reportTitle,
-            'generatedAt' => now()->format('d M Y, h:i A')
+            'generatedAt' => now()->format('d M Y, h:i A'),
+            'status' => $status
         ];
 
         $pdf = Pdf::loadView('modules.tickets.pdf_report', $data);
