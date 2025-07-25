@@ -17,6 +17,9 @@ class Ticket extends Model
         'created_by',
         'closed_at',
         'deadline',
+        'category',
+        'urgent',
+        'sub_company',
     ];
 
     /**

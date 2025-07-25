@@ -84,6 +84,7 @@
                                     <tr>
                                         <th class="text-center">#</th>
                                         <th class="text-center">Name</th>
+                                        <th class="text-center">Urgent</th>
                                         <th class="text-center">Status</th>
                                         <th class="text-center">Assigned To</th>
                                         <th class="text-center">Created At</th>
@@ -101,6 +102,16 @@
                                             @if($ticket->attachments && $ticket->attachments->count() > 0)
                                             <i class="bi bi-paperclip ms-1"
                                                 title="{{ $ticket->attachments->count() }} attachment(s)"></i>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @if($ticket->urgent)
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                                Urgent
+                                            </span>
+                                            @else
+                                            <span class="text-muted">-</span>
                                             @endif
                                         </td>
                                         <td class="text-center">
@@ -193,7 +204,7 @@
                                     </tr>
                                     @empty
                                     <tr id="empty-row">
-                                        <td colspan="8" class="text-center">No tickets found</td>
+                                        <td colspan="9" class="text-center">No tickets found</td>
                                     </tr>
                                     @endforelse
                                 </tbody>
@@ -227,7 +238,7 @@
                 autoWidth: false,
                 order: [[0, 'asc']],
                 columnDefs: [
-                    { orderable: false, targets: 7 } // Disable sorting on the Actions column
+                    { orderable: false, targets: 8 } // Disable sorting on the Actions column
                 ]
             });
         } else {

@@ -103,6 +103,9 @@ class TicketController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'required|string',
             'deadline' => 'required|date|after_or_equal:today',
+            'category' => 'required|string|in:Whitelabel,Reports,Website,Email,Domain,Others',
+            'sub_company' => 'required|string|in:CG,Teesprint',
+            'urgent' => 'nullable|boolean',
             'attachments.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
@@ -112,6 +115,9 @@ class TicketController extends Controller
         $ticket->status = 'open';
         $ticket->created_by = Auth::id();
         $ticket->deadline = $request->deadline;
+        $ticket->category = $request->category;
+        $ticket->sub_company = $request->sub_company;
+        $ticket->urgent = $request->has('urgent');
         $ticket->save();
 
         // Record ticket creation activity
