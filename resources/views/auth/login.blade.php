@@ -60,6 +60,12 @@
                                             {{ __('Login') }}
                                         </button>
                                     </div>
+
+                                    <div class="text-center">
+                                        <a href="{{ route('password.request-otp') }}" class="text-decoration-none">
+                                            <small>{{ __('Forgot Your Password?') }}</small>
+                                        </a>
+                                    </div>
                                 </form>
                             </div>
                         </div>

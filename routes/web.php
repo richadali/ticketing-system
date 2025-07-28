@@ -28,16 +28,26 @@ Route::get('/register-admin', [AdminRegisterController::class, 'showRegistration
 Route::post('/register-admin', [AdminRegisterController::class, 'register'])
     ->middleware('guest');
 
-// These routes are causing errors, commenting out temporarily
-// Route::get('/password-reset', [PasswordResetContoller::class, 'index'])
-//     ->middleware('cache.headers')
-//     ->middleware('throttle')
-//     ->name('password-reset');
+// OTP-based Password Reset Routes
+Route::get('/password/reset-otp', [App\Http\Controllers\Auth\OtpPasswordResetController::class, 'showRequestForm'])
+    ->middleware('guest')
+    ->name('password.request-otp');
 
-// Route::post('/user-reset-password', [PasswordResetContoller::class, 'ResetPassword'])
-//     ->middleware('cache.headers')
-//     ->middleware('throttle')
-//     ->name('user-reset-password');
+Route::post('/password/send-otp', [App\Http\Controllers\Auth\OtpPasswordResetController::class, 'sendOtp'])
+    ->middleware('guest')
+    ->name('password.send-otp');
+
+Route::get('/password/verify-otp', [App\Http\Controllers\Auth\OtpPasswordResetController::class, 'showVerifyForm'])
+    ->middleware('guest')
+    ->name('password.verify-otp');
+
+Route::post('/password/reset-with-otp', [App\Http\Controllers\Auth\OtpPasswordResetController::class, 'resetPassword'])
+    ->middleware('guest')
+    ->name('password.reset-with-otp');
+
+Route::post('/password/resend-otp', [App\Http\Controllers\Auth\OtpPasswordResetController::class, 'resendOtp'])
+    ->middleware('guest')
+    ->name('password.resend-otp');
 
 // Route::get('/auth/google', [LoginController::class, 'redirectToProvider']);
 // Route::get('/auth/google/callback', [LoginController::class, 'handleProviderCallback']);
