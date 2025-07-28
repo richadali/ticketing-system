@@ -7,6 +7,7 @@
 !/public/uploads/tickets/.gitkeep
 /storage/*.key
 /vendor
+.env
 .phpunit.result.cache
 docker-compose.override.yml
 Homestead.json
@@ -15,3 +16,4 @@ npm-debug.log
 yarn-error.log
 /.idea
 /.vscode
+
