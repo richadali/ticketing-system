@@ -21,7 +21,7 @@
                         </p>
                     </div>
 
-                    <form method="POST" action="{{ route('password.reset-with-otp') }}">
+                    <form method="POST" action="{{ route('password.reset-with-otp') }}" id="otpResetForm" class="needs-validation" novalidate>
                         @csrf
 
                         <input type="hidden" name="email" value="{{ $email }}">
@@ -65,12 +65,15 @@
                             <div class="col-md-6">
                                 <input id="password-confirm" type="password" class="form-control" 
                                        name="password_confirmation" required autocomplete="new-password">
+                                <div id="passwordMatchFeedback" class="form-text text-danger d-none">
+                                    Passwords do not match.
+                                </div>
                             </div>
                         </div>
 
                         <div class="row mb-0">
                             <div class="col-md-6 offset-md-4">
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-primary" id="submitBtn">
                                     {{ __('Reset Password') }}
                                 </button>
                             </div>
@@ -111,8 +114,15 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Auto-format OTP input
+    // Get form elements
     const otpInput = document.getElementById('otp');
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('password-confirm');
+    const passwordMatchFeedback = document.getElementById('passwordMatchFeedback');
+    const submitBtn = document.getElementById('submitBtn');
+    const form = document.getElementById('otpResetForm');
+    
+    // Auto-format OTP input
     otpInput.addEventListener('input', function(e) {
         // Only allow numbers
         this.value = this.value.replace(/[^0-9]/g, '');
@@ -123,12 +133,59 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Auto-submit when 6 digits are entered
+    // Auto-focus to password field when 6 digits are entered
     otpInput.addEventListener('input', function(e) {
         if (this.value.length === 6) {
-            // Optional: Auto-focus to password field
-            document.getElementById('password').focus();
+            passwordInput.focus();
         }
+    });
+    
+    // Function to check if passwords match
+    function checkPasswordsMatch() {
+        const password = passwordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+        
+        if (confirmPassword === '') {
+            passwordMatchFeedback.classList.add('d-none');
+            confirmPasswordInput.classList.remove('is-valid', 'is-invalid');
+            submitBtn.disabled = false;
+            return;
+        }
+        
+        if (password === confirmPassword) {
+            passwordMatchFeedback.classList.add('d-none');
+            confirmPasswordInput.classList.remove('is-invalid');
+            confirmPasswordInput.classList.add('is-valid');
+            submitBtn.disabled = false;
+        } else {
+            passwordMatchFeedback.classList.remove('d-none');
+            confirmPasswordInput.classList.remove('is-valid');
+            confirmPasswordInput.classList.add('is-invalid');
+            submitBtn.disabled = true;
+        }
+    }
+    
+    // Add event listeners for password validation
+    passwordInput.addEventListener('input', checkPasswordsMatch);
+    confirmPasswordInput.addEventListener('input', checkPasswordsMatch);
+    
+    // Form validation on submit
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
+        const password = passwordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+        
+        if (password !== confirmPassword) {
+            event.preventDefault();
+            passwordMatchFeedback.classList.remove('d-none');
+            confirmPasswordInput.classList.add('is-invalid');
+        }
+        
+        form.classList.add('was-validated');
     });
 });
 </script>

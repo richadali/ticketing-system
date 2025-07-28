@@ -81,12 +81,15 @@ class OtpPasswordResetController extends Controller
      */
     public function showVerifyForm(Request $request)
     {
-        $email = $request->session()->get('email') ?? $request->get('email');
+        $email = $request->session()->get('email') ?? $request->get('email') ?? old('email');
         
         if (!$email) {
             return redirect()->route('password.request-otp')
                            ->withErrors(['email' => 'Please request an OTP first.']);
         }
+
+        // Store email in session to persist through validation errors
+        $request->session()->put('email', $email);
 
         return view('auth.passwords.verify-otp', compact('email'));
     }
@@ -103,7 +106,11 @@ class OtpPasswordResetController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput($request->only('email'));
+            // Preserve email in session for redirect
+            $request->session()->put('email', $request->email);
+            return redirect()->route('password.verify-otp')
+                           ->withErrors($validator)
+                           ->withInput($request->only('email'));
         }
 
         $email = $request->email;
@@ -113,24 +120,30 @@ class OtpPasswordResetController extends Controller
         $key = 'otp-verify:' . $email;
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $seconds = RateLimiter::availableIn($key);
-            return back()->withErrors([
-                'otp' => "Too many failed attempts. Please try again in " . ceil($seconds / 60) . " minutes."
-            ])->withInput($request->only('email'));
+            $request->session()->put('email', $email);
+            return redirect()->route('password.verify-otp')
+                           ->withErrors([
+                               'otp' => "Too many failed attempts. Please try again in " . ceil($seconds / 60) . " minutes."
+                           ])->withInput($request->only('email'));
         }
 
         // Check if email has exceeded maximum attempts
         if (PasswordResetOtp::hasExceededAttempts($email)) {
-            return back()->withErrors([
-                'otp' => 'Maximum verification attempts exceeded. Please request a new OTP.'
-            ])->withInput($request->only('email'));
+            $request->session()->put('email', $email);
+            return redirect()->route('password.verify-otp')
+                           ->withErrors([
+                               'otp' => 'Maximum verification attempts exceeded. Please request a new OTP.'
+                           ])->withInput($request->only('email'));
         }
 
         // Verify OTP
         if (!PasswordResetOtp::verifyOtp($email, $otp)) {
             RateLimiter::hit($key, 900); // 15 minutes
-            return back()->withErrors([
-                'otp' => 'Invalid or expired OTP. Please check and try again.'
-            ])->withInput($request->only('email'));
+            $request->session()->put('email', $email);
+            return redirect()->route('password.verify-otp')
+                           ->withErrors([
+                               'otp' => 'Invalid or expired OTP. Please check and try again.'
+                           ])->withInput($request->only('email'));
         }
 
         try {
@@ -152,9 +165,11 @@ class OtpPasswordResetController extends Controller
 
         } catch (\Exception $e) {
             \Log::error('Failed to reset password: ' . $e->getMessage());
-            return back()->withErrors([
-                'password' => 'Failed to reset password. Please try again.'
-            ])->withInput($request->only('email'));
+            $request->session()->put('email', $email);
+            return redirect()->route('password.verify-otp')
+                           ->withErrors([
+                               'password' => 'Failed to reset password. Please try again.'
+                           ])->withInput($request->only('email'));
         }
     }
 
