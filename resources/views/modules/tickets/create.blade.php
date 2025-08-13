@@ -13,6 +13,7 @@
             </ol>
         </nav>
     </div><!-- End Page Title -->
+    <script src="{{ asset('js/tinymce/tinymce.min.js') }}"></script>
     <section class="section">
         <div class="row">
             <div class="col-lg-12">
@@ -43,8 +44,8 @@
                             <div class="row mb-3">
                                 <div class="col-md-12">
                                     <label for="description" class="form-label"><b>Description</b></label>
-                                    <textarea class="form-control" id="description" name="description" rows="5"
-                                        required>{{ old('description') }}</textarea>
+                                    <textarea class="form-control" id="description" name="description"
+                                        rows="5">{{ old('description') }}</textarea>
                                     <small class="text-muted">Please provide detailed information about your
                                         issue.</small>
                                 </div>
@@ -130,6 +131,52 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        let tinyMCEEditor;
+        
+        // Initialize TinyMCE
+                tinymce.init({
+                    selector: '#description',
+                    menubar: false,
+                    plugins: ["preview", "code", "wordcount"],
+                    toolbar: [
+                        "undo redo | bold italic underline strikethrough | fontselect fontsizeselect | alignleft aligncenter alignright alignjustify | outdent indent | numlist bullist",
+                    ],
+                    toolbar_sticky: true,
+                    branding: false,
+                    quickbars_selection_toolbar:
+                        "bold italic | blockquote | alignleft aligncenter alignright alignjustify",
+                    height: 300,
+                    setup: function(editor) {
+                        tinyMCEEditor = editor;
+                        
+                        // Add form submit handler to validate and sync content
+                        const form = document.querySelector('form');
+                        if (form) {
+                            form.addEventListener('submit', function(e) {
+                                // Sync content to textarea
+                                editor.save();
+                                
+                                // Get content from TinyMCE editor
+                                const content = editor.getContent({format: 'text'}).trim();
+                                
+                                // Check if content is empty
+                                if (content === '') {
+                                    e.preventDefault(); // Prevent form submission
+                                    
+                                    // Show error message
+                                    alert('The description field is required.');
+                                    
+                                    // Focus the TinyMCE editor
+                                    editor.focus();
+                                    
+                                    return false;
+                                }
+                            });
+                        }
+                    }
+                });
+        
+        // File attachment validation
         const attachmentsInput = document.getElementById('attachments');
         const maxFileSize = 2 * 1024 * 1024; // 2MB in bytes
         const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];

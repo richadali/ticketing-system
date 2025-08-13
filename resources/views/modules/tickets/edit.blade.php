@@ -13,6 +13,7 @@
             </ol>
         </nav>
     </div><!-- End Page Title -->
+    <script src="{{ asset('js/tinymce/tinymce.min.js') }}"></script>
     <section class="section">
         <div class="row">
             <div class="col-lg-12">
@@ -44,8 +45,8 @@
                             <div class="row mb-3">
                                 <div class="col-md-12">
                                     <label for="description" class="form-label"><b>Description</b></label>
-                                    <textarea class="form-control" id="description" name="description" rows="5"
-                                        required>{{ old('description', $ticket->description) }}</textarea>
+                                    <textarea class="form-control" id="description" name="description"
+                                        rows="5">{{ old('description', $ticket->description) }}</textarea>
                                 </div>
                             </div>
 
@@ -53,21 +54,31 @@
                                 <div class="col-md-4">
                                     <label for="category" class="form-label"><b>Category</b></label>
                                     <select class="form-select" id="category" name="category" required>
-                                        <option value="" disabled {{ old('category', $ticket->category) ? '' : 'selected' }}>Select Category</option>
-                                        <option value="Whitelabel" {{ old('category', $ticket->category)=='Whitelabel' ? 'selected' : '' }}>Whitelabel</option>
-                                        <option value="Reports" {{ old('category', $ticket->category)=='Reports' ? 'selected' : '' }}>Reports</option>
-                                        <option value="Website" {{ old('category', $ticket->category)=='Website' ? 'selected' : '' }}>Website</option>
-                                        <option value="Email" {{ old('category', $ticket->category)=='Email' ? 'selected' : '' }}>Email</option>
-                                        <option value="Domain" {{ old('category', $ticket->category)=='Domain' ? 'selected' : '' }}>Domain</option>
-                                        <option value="Others" {{ old('category', $ticket->category)=='Others' ? 'selected' : '' }}>Others</option>
+                                        <option value="" disabled {{ old('category', $ticket->category) ? '' :
+                                            'selected' }}>Select Category</option>
+                                        <option value="Whitelabel" {{ old('category', $ticket->category)=='Whitelabel' ?
+                                            'selected' : '' }}>Whitelabel</option>
+                                        <option value="Reports" {{ old('category', $ticket->category)=='Reports' ?
+                                            'selected' : '' }}>Reports</option>
+                                        <option value="Website" {{ old('category', $ticket->category)=='Website' ?
+                                            'selected' : '' }}>Website</option>
+                                        <option value="Email" {{ old('category', $ticket->category)=='Email' ?
+                                            'selected' : '' }}>Email</option>
+                                        <option value="Domain" {{ old('category', $ticket->category)=='Domain' ?
+                                            'selected' : '' }}>Domain</option>
+                                        <option value="Others" {{ old('category', $ticket->category)=='Others' ?
+                                            'selected' : '' }}>Others</option>
                                     </select>
                                 </div>
                                 <div class="col-md-4">
                                     <label for="sub_company" class="form-label"><b>Sub-Company</b></label>
                                     <select class="form-select" id="sub_company" name="sub_company" required>
-                                        <option value="" disabled {{ old('sub_company', $ticket->sub_company) ? '' : 'selected' }}>Select Sub-Company</option>
-                                        <option value="CG" {{ old('sub_company', $ticket->sub_company)=='CG' ? 'selected' : '' }}>CG</option>
-                                        <option value="Teesprint" {{ old('sub_company', $ticket->sub_company)=='Teesprint' ? 'selected' : '' }}>Teesprint</option>
+                                        <option value="" disabled {{ old('sub_company', $ticket->sub_company) ? '' :
+                                            'selected' }}>Select Sub-Company</option>
+                                        <option value="CG" {{ old('sub_company', $ticket->sub_company)=='CG' ?
+                                            'selected' : '' }}>CG</option>
+                                        <option value="Teesprint" {{ old('sub_company', $ticket->
+                                            sub_company)=='Teesprint' ? 'selected' : '' }}>Teesprint</option>
                                     </select>
                                 </div>
                                 <div class="col-md-4">
@@ -109,6 +120,54 @@
     </section>
     <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i
             class="bi bi-arrow-up-short"></i></a>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+        let tinyMCEEditor;
+        
+        // Initialize TinyMCE
+        tinymce.init({
+            selector: '#description',
+            menubar: false,
+            plugins: ["preview", "code", "wordcount"],
+            toolbar: [
+                "undo redo | bold italic underline strikethrough | fontselect fontsizeselect | alignleft aligncenter alignright alignjustify | outdent indent | numlist bullist",
+            ],
+            toolbar_sticky: true,
+            branding: false,
+            quickbars_selection_toolbar:
+                "bold italic | blockquote | alignleft aligncenter alignright alignjustify",
+            height: 300,
+            setup: function(editor) {
+                tinyMCEEditor = editor;
+                
+                // Add form submit handler to validate and sync content
+                const form = document.querySelector('form');
+                if (form) {
+                    form.addEventListener('submit', function(e) {
+                        // Sync content to textarea
+                        editor.save();
+                        
+                        // Get content from TinyMCE editor
+                        const content = editor.getContent({format: 'text'}).trim();
+                        
+                        // Check if content is empty
+                        if (content === '') {
+                            e.preventDefault(); // Prevent form submission
+                            
+                            // Show error message
+                            alert('The description field is required.');
+                            
+                            // Focus the TinyMCE editor
+                            editor.focus();
+                            
+                            return false;
+                        }
+                    });
+                }
+            }
+        });
+    });
+    </script>
 </main>
 
 @endsection

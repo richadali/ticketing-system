@@ -193,6 +193,10 @@ Route::middleware('auth')->group(function () {
         ->middleware('cache.headers')
         ->middleware('throttle')
         ->name('tickets.change-status');
+Route::post('/tickets/{ticket}/add-comment', [TicketController::class, 'addComment'])
+        ->middleware('cache.headers')
+        ->middleware('throttle')
+        ->name('tickets.add-comment');
 
     Route::get('/tickets-reports', [TicketController::class, 'reports'])
         ->middleware('cache.headers')

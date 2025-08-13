@@ -65,8 +65,8 @@ class TicketController extends Controller
 
         // Get tickets sorted by deadline and urgent status
         $tickets = $query->orderBy('deadline', 'asc')  // First by deadline (ascending)
-                         ->orderBy('urgent', 'desc')   // Then urgent tickets first within each deadline
-                         ->get();
+            ->orderBy('urgent', 'desc')   // Then urgent tickets first within each deadline
+            ->get();
 
         // Get statuses for filter dropdown
         $statuses = ['all' => 'All', 'open' => 'Open', 'in_progress' => 'In Progress', 'closed' => 'Closed'];
@@ -152,7 +152,7 @@ class TicketController extends Controller
     public function show(Ticket $ticket)
     {
         $role = Auth::user()->role ? Auth::user()->role->name : 'User';
-        $ticket->load('assignedTo', 'attachments', 'activities.user', 'creator');
+        $ticket->load('assignedTo', 'attachments', 'activities.user', 'creator', 'comments.user');
 
         $adminUsers = [];
         if ($role === 'Admin') {
@@ -230,13 +230,15 @@ class TicketController extends Controller
         // Regular users can only edit name, description, deadline, category, sub_company, and urgent flag
         if ($role !== 'Admin') {
             // Track changes to ticket details
-            if ($ticket->name != $request->name ||
+            if (
+                $ticket->name != $request->name ||
                 $ticket->description != $request->description ||
                 $ticket->deadline != $request->deadline ||
                 $ticket->category != $request->category ||
                 $ticket->sub_company != $request->sub_company ||
-                $ticket->urgent != $request->has('urgent')) {
-                
+                $ticket->urgent != $request->has('urgent')
+            ) {
+
                 $this->recordActivity(
                     $ticket,
                     'updated',
@@ -430,7 +432,7 @@ class TicketController extends Controller
     {
         // Validate request
         $request->validate([
-            'admin_id' => 'required|exists:users,id',
+            'assigned_to' => 'required|exists:users,id',
         ]);
 
         $user = Auth::user();
@@ -444,11 +446,11 @@ class TicketController extends Controller
 
         // Update ticket
         $oldAssignee = $ticket->assigned_to;
-        $ticket->assigned_to = $request->admin_id;
+        $ticket->assigned_to = $request->assigned_to;
         $ticket->save();
 
         // Record activity
-        $newAdmin = User::find($request->admin_id);
+        $newAdmin = User::find($request->assigned_to);
         $oldAdmin = $oldAssignee ? User::find($oldAssignee) : null;
 
         $this->recordActivity(
@@ -484,7 +486,7 @@ class TicketController extends Controller
         // Get status from request, maintain it in session if valid
         $validStatuses = ['open', 'in_progress', 'closed'];
         $requestStatus = $request->input('status');
-        
+
         if ($requestStatus && in_array($requestStatus, $validStatuses)) {
             // Valid status provided in request, use it and store in session
             $status = $requestStatus;
@@ -529,13 +531,13 @@ class TicketController extends Controller
         if ($status == 'closed') {
             // For closed tickets, sort by closed date
             $tickets = $query->orderBy($dateField, 'desc')
-                             ->orderBy('urgent', 'desc')
-                             ->get();
+                ->orderBy('urgent', 'desc')
+                ->get();
         } else {
             // For open/in-progress tickets, sort by deadline then urgent
             $tickets = $query->orderBy('deadline', 'asc')    // First by deadline (ascending)
-                             ->orderBy('urgent', 'desc')     // Then urgent tickets first within each deadline
-                             ->get();
+                ->orderBy('urgent', 'desc')     // Then urgent tickets first within each deadline
+                ->get();
         }
 
         // Check if PDF export is requested
@@ -581,5 +583,33 @@ class TicketController extends Controller
 
         // Return as download
         return $pdf->download($filename);
+    }
+    /**
+     * Add a comment to a ticket.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Ticket  $ticket
+     * @return \Illuminate\Http\Response
+     */
+    public function addComment(Request $request, Ticket $ticket)
+    {
+        $user = Auth::user();
+        $role = $user->role ? $user->role->name : 'User';
+
+        // Only admins can add comments
+        if ($role !== 'Admin') {
+            return redirect()->route('tickets.show', $ticket)->with('error', 'You do not have permission to add comments.');
+        }
+
+        $request->validate([
+            'comment' => 'required|string',
+        ]);
+
+        $ticket->comments()->create([
+            'user_id' => $user->id,
+            'body' => $request->comment,
+        ]);
+
+        return redirect()->route('tickets.show', $ticket)->with('success', 'Comment added successfully.');
     }
 }

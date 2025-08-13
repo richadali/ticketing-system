@@ -10,17 +10,17 @@ class Ticket extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name',
-        'status',
-        'description',
-        'assigned_to',
-        'created_by',
-        'closed_at',
-        'deadline',
-        'category',
-        'urgent',
-        'sub_company',
-    ];
+            'name',
+            'status',
+            'description',
+            'assigned_to',
+            'created_by',
+            'closed_at',
+            'deadline',
+            'category',
+            'urgent',
+            'sub_company',
+        ];
 
     /**
      * The attributes that should be cast.
@@ -60,7 +60,15 @@ class Ticket extends Model
      * Get the activities for the ticket.
      */
     public function activities()
-    {
-        return $this->hasMany(TicketActivity::class)->orderBy('created_at', 'desc');
+        {
+            return $this->hasMany(TicketActivity::class)->orderBy('created_at', 'desc');
+        }
+    
+        /**
+         * Get the comments for the ticket.
+         */
+        public function comments()
+        {
+            return $this->hasMany(Comment::class)->orderBy('created_at', 'desc');
+        }
     }
-}

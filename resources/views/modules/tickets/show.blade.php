@@ -13,6 +13,7 @@
             </ol>
         </nav>
     </div><!-- End Page Title -->
+    <script src="{{ asset('js/tinymce/tinymce.min.js') }}"></script>
     <section class="section">
         <div class="row">
             <div class="col-lg-12">
@@ -182,6 +183,61 @@
                     </div>
                 </div>
 
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <strong>Comments</strong>
+                            </div>
+                            <div class="card-body">
+                                @if($ticket->comments->count() > 0)
+                                @foreach($ticket->comments as $comment)
+                                <div class="mb-3">
+                                    <p class="mb-1">
+                                        <strong>{{ $comment->user->name }}</strong>
+                                        <small class="text-muted">({{ $comment->created_at->format('d M Y, h:i A')
+                                            }})</small>
+                                    </p>
+                                    {!! $comment->body !!}
+                                </div>
+                                @if(!$loop->last)
+                                <hr>
+                                @endif
+                                @endforeach
+                                @else
+                                <p class="text-muted">No comments yet.</p>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @if($role === 'Admin')
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <strong>Add Comment</strong>
+                            </div>
+                            <div class="card-body">
+                                <form action="{{ route('tickets.add-comment', $ticket) }}" method="POST">
+                                    @csrf
+                                    <div class="row mb-3">
+                                        <div class="col-md-12">
+                                            <textarea class="form-control" id="comment" name="comment"
+                                                rows="5"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <button type="submit" class="btn btn-primary">Submit Comment</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
                 @if($ticket->attachments->count() > 0)
                 <div class="row mb-4">
                     <div class="col-md-12">
@@ -272,6 +328,23 @@
                         </form>
                         @endif
                     </div>
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+        tinymce.init({
+            selector: '#comment',
+            menubar: false,
+            plugins: ["preview", "code", "wordcount"],
+            toolbar: [
+                "undo redo | bold italic underline strikethrough | fontselect fontsizeselect | alignleft aligncenter alignright alignjustify | outdent indent | numlist bullist",
+            ],
+            toolbar_sticky: true,
+            branding: false,
+            quickbars_selection_toolbar:
+                "bold italic | blockquote | alignleft aligncenter alignright alignjustify",
+            height: 200,
+        });
+    });
+                    </script>
                 </div>
             </div>
         </div>
