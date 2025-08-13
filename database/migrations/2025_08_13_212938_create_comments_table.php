@@ -12,15 +12,17 @@ class CreateCommentsTable extends Migration
      * @return void
      */
     public function up()
-    {
-        Schema::create('comments', function (Blueprint $table) {
+        {
+            if (!Schema::hasTable('comments')) {
+                Schema::create('comments', function (Blueprint $table) {
                     $table->id();
                     $table->foreignId('ticket_id')->constrained()->onDelete('cascade');
                     $table->foreignId('user_id')->constrained()->onDelete('cascade');
                     $table->longText('body');
                     $table->timestamps();
                 });
-    }
+            }
+        }
 
     /**
      * Reverse the migrations.
