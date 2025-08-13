@@ -177,7 +177,7 @@
                                 <strong>Description</strong>
                             </div>
                             <div class="card-body">
-                                <p>{{ $ticket->description }}</p>
+                                <p>{!! $ticket->description !!}</p>
                             </div>
                         </div>
                     </div>
