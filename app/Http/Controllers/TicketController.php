@@ -161,7 +161,20 @@ class TicketController extends Controller
             })->get();
         }
 
-        return view('modules.tickets.show', compact('ticket', 'role', 'adminUsers'));
+        return view('modules.tickets.edit', compact('ticket', 'role', 'adminUsers'));
+    }
+
+    /**
+     * Display the specified resource for modal view.
+     *
+     * @param  \App\Models\Ticket  $ticket
+     * @return \Illuminate\Http\Response
+     */
+    public function details(Ticket $ticket)
+    {
+        $ticket->load('assignedTo', 'attachments', 'activities.user', 'creator', 'comments.user');
+
+        return view('modules.tickets.details', compact('ticket'));
     }
 
     /**
@@ -178,13 +191,13 @@ class TicketController extends Controller
 
         // Only admins or the creator of the ticket can edit
         if ($role !== 'Admin' && !$isCreator) {
-            return redirect()->route('tickets.show', $ticket)->with('error', 'You do not have permission to edit this ticket.');
+            return redirect()->route('tickets.edit', $ticket)->with('error', 'You do not have permission to edit this ticket.');
         }
 
-        // Only open tickets can be edited
-        if ($ticket->status !== 'open') {
-            return redirect()->route('tickets.show', $ticket)->with('error', 'Only tickets with "Open" status can be edited.');
-        }
+        // // Only open tickets can be edited
+        // if ($ticket->status !== 'open') {
+        //     return redirect()->route('tickets.show', $ticket)->with('error', 'Only tickets with "Open" status can be edited.');
+        // }
 
         $users = User::whereHas('role', function ($query) {
             $query->where('name', 'Admin');
@@ -194,105 +207,123 @@ class TicketController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the status and assignment of a ticket.
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  \App\Models\Ticket  $ticket
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Ticket $ticket)
+    public function updateStatusAndAssignment(Request $request, Ticket $ticket)
+    {
+        $user = Auth::user();
+        $role = $user->role ? $user->role->name : 'User';
+
+        // Authorization: Only admins can perform this action.
+        if ($role !== 'Admin') {
+            return redirect()->route('tickets.edit', $ticket)->with('error', 'You do not have permission to perform this action.');
+        }
+
+        $request->validate([
+            'status' => 'sometimes|required|in:open,in_progress,closed',
+            'assigned_to' => 'sometimes|nullable|exists:users,id',
+        ]);
+
+        // Track status change
+        if ($request->has('status') && $ticket->status != $request->status) {
+            $this->recordActivity(
+                $ticket,
+                'status_changed',
+                'Ticket status changed to ' . $request->status,
+                $ticket->status,
+                $request->status
+            );
+            $ticket->status = $request->status;
+            if ($request->status == 'closed') {
+                $ticket->closed_at = now();
+            } else {
+                $ticket->closed_at = null;
+            }
+        }
+
+        // Track assignment change
+        if ($request->has('assigned_to') && $ticket->assigned_to != $request->assigned_to) {
+            $newAssigneeName = 'Unassigned';
+            if ($request->assigned_to) {
+                $newAssignee = User::find($request->assigned_to);
+                $newAssigneeName = $newAssignee->name;
+            }
+            $this->recordActivity(
+                $ticket,
+                'assigned',
+                'Ticket was assigned to ' . $newAssigneeName
+            );
+            $ticket->assigned_to = $request->assigned_to;
+        }
+
+        $ticket->save();
+
+        return redirect()->route('tickets.edit', $ticket)->with('success', 'Ticket updated successfully.');
+    }
+
+    /**
+     * Update the details of a specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Ticket  $ticket
+     * @return \Illuminate\Http\Response
+     */
+    public function updateDetails(Request $request, Ticket $ticket)
     {
         $user = Auth::user();
         $role = $user->role ? $user->role->name : 'User';
         $isCreator = $ticket->created_by == $user->id;
 
-        // Only admins or the creator of the ticket can update
+        // Authorization: Only admins or the ticket creator can update details.
         if ($role !== 'Admin' && !$isCreator) {
-            return redirect()->route('tickets.show', $ticket)->with('error', 'You do not have permission to update this ticket.');
+            return redirect()->route('tickets.edit', $ticket)->with('error', 'You do not have permission to update this ticket.');
         }
 
-        // Only open tickets can be updated
-        if ($ticket->status !== 'open') {
-            return redirect()->route('tickets.show', $ticket)->with('error', 'Only tickets with "Open" status can be updated.');
-        }
+        // // Business Logic: Only tickets with "Open" status can be edited.
+        // if ($ticket->status !== 'open') {
+        //     return redirect()->route('tickets.show', $ticket)->with('error', 'Only tickets with "Open" status can be edited.');
+        // }
 
+        // Validation for ticket details
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'required|string',
-            'status' => 'required|in:open,in_progress,closed',
-            'assigned_to' => 'nullable|exists:users,id',
             'deadline' => 'required|date',
             'category' => 'required|string|in:Whitelabel,Reports,Website,Email,Domain,Others',
             'sub_company' => 'required|string|in:CG,Teesprint',
             'urgent' => 'nullable|boolean',
         ]);
 
-        // Regular users can only edit name, description, deadline, category, sub_company, and urgent flag
-        if ($role !== 'Admin') {
-            // Track changes to ticket details
-            if (
-                $ticket->name != $request->name ||
-                $ticket->description != $request->description ||
-                $ticket->deadline != $request->deadline ||
-                $ticket->category != $request->category ||
-                $ticket->sub_company != $request->sub_company ||
-                $ticket->urgent != $request->has('urgent')
-            ) {
-
-                $this->recordActivity(
-                    $ticket,
-                    'updated',
-                    'Ticket details were updated'
-                );
-            }
-
-            // Update ticket details
-            $ticket->name = $request->name;
-            $ticket->description = $request->description;
-            $ticket->deadline = $request->deadline;
-            $ticket->category = $request->category;
-            $ticket->sub_company = $request->sub_company;
-            $ticket->urgent = $request->has('urgent');
-            $ticket->save();
-        } else {
-            // Track status change - only for closed
-            if (($ticket->status != $request->status) && $request->status == 'closed') {
-                $this->recordActivity(
-                    $ticket,
-                    'status_changed',
-                    'Ticket was closed',
-                    $ticket->status,
-                    $request->status
-                );
-
-                // Set closed_at timestamp when ticket is closed
-                $ticket->closed_at = now();
-            }
-
-            // Track assignment change
-            if ($ticket->assigned_to != $request->assigned_to && $request->assigned_to) {
-                $newAssignee = User::find($request->assigned_to)->name;
-
-                $this->recordActivity(
-                    $ticket,
-                    'assigned',
-                    'Ticket was assigned to ' . $newAssignee
-                );
-            }
-
-            // Update ticket (all fields for admin)
-            $ticket->name = $request->name;
-            $ticket->description = $request->description;
-            $ticket->status = $request->status;
-            $ticket->assigned_to = $request->assigned_to;
-            $ticket->deadline = $request->deadline;
-            $ticket->category = $request->category;
-            $ticket->sub_company = $request->sub_company;
-            $ticket->urgent = $request->has('urgent');
-            $ticket->save();
+        // Track changes for the activity log
+        if (
+            $ticket->name != $request->name ||
+            $ticket->description != $request->description ||
+            $ticket->deadline != $request->deadline ||
+            $ticket->category != $request->category ||
+            $ticket->sub_company != $request->sub_company ||
+            $ticket->urgent != $request->has('urgent')
+        ) {
+            $this->recordActivity(
+                $ticket,
+                'updated',
+                'Ticket details were updated'
+            );
         }
 
-        return redirect()->route('tickets.show', $ticket)->with('success', 'Ticket updated successfully.');
+        // Update ticket details
+        $ticket->name = $request->name;
+        $ticket->description = $request->description;
+        $ticket->deadline = $request->deadline;
+        $ticket->category = $request->category;
+        $ticket->sub_company = $request->sub_company;
+        $ticket->urgent = $request->has('urgent');
+        $ticket->save();
+
+        return redirect()->route('tickets.edit', $ticket)->with('success', 'Ticket details updated successfully.');
     }
 
     /**
@@ -343,7 +374,7 @@ class TicketController extends Controller
 
         // Only admins can assign tickets to themselves
         if ($role !== 'Admin') {
-            return redirect()->route('tickets.show', $ticket)->with('error', 'You do not have permission to assign tickets.');
+            return redirect()->route('tickets.edit', $ticket)->with('error', 'You do not have permission to assign tickets.');
         }
 
         $oldAssignedTo = $ticket->assigned_to;
@@ -372,7 +403,7 @@ class TicketController extends Controller
             );
         }
 
-        return redirect()->route('tickets.show', $ticket)->with('success', 'Ticket assigned to you successfully and set to In Progress.');
+        return redirect()->route('tickets.edit', $ticket)->with('success', 'Ticket assigned to you successfully and set to In Progress.');
     }
 
     /**
@@ -389,7 +420,7 @@ class TicketController extends Controller
 
         // Only admins can change status directly
         if ($role !== 'Admin') {
-            return redirect()->route('tickets.show', $ticket)->with('error', 'You do not have permission to change ticket status.');
+            return redirect()->route('tickets.edit', $ticket)->with('error', 'You do not have permission to change ticket status.');
         }
 
         $request->validate([
@@ -418,7 +449,7 @@ class TicketController extends Controller
             $request->status
         );
 
-        return redirect()->route('tickets.show', $ticket)->with('success', 'Ticket status updated successfully.');
+        return redirect()->route('tickets.edit', $ticket)->with('success', 'Ticket status updated successfully.');
     }
 
     /**
@@ -440,7 +471,7 @@ class TicketController extends Controller
 
         // Check permissions
         if ($role !== 'Admin') {
-            return redirect()->route('tickets.show', $ticket)
+            return redirect()->route('tickets.edit', $ticket)
                 ->with('error', 'Only admins can assign tickets.');
         }
 
@@ -461,7 +492,7 @@ class TicketController extends Controller
             $newAdmin->name
         );
 
-        return redirect()->route('tickets.show', $ticket)
+        return redirect()->route('tickets.edit', $ticket)
             ->with('success', 'Ticket assigned successfully.');
     }
 
@@ -598,7 +629,7 @@ class TicketController extends Controller
 
         // Only admins can add comments
         if ($role !== 'Admin') {
-            return redirect()->route('tickets.show', $ticket)->with('error', 'You do not have permission to add comments.');
+            return redirect()->route('tickets.edit', $ticket)->with('error', 'You do not have permission to add comments.');
         }
 
         $request->validate([
@@ -610,6 +641,6 @@ class TicketController extends Controller
             'body' => $request->comment,
         ]);
 
-        return redirect()->route('tickets.show', $ticket)->with('success', 'Comment added successfully.');
+        return redirect()->route('tickets.edit', $ticket)->with('success', 'Comment added successfully.');
     }
 }

@@ -164,10 +164,20 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle')
         ->name('tickets.show');
 
+    Route::get('/tickets/{ticket}/details', [TicketController::class, 'details'])
+        ->middleware('cache.headers')
+        ->middleware('throttle')
+        ->name('tickets.details');
+
     Route::get('/tickets/{ticket}/edit', [TicketController::class, 'edit'])
         ->middleware('cache.headers')
         ->middleware('throttle')
         ->name('tickets.edit');
+
+    Route::put('/tickets/{ticket}/update-details', [TicketController::class, 'updateDetails'])
+        ->middleware('cache.headers')
+        ->middleware('throttle')
+        ->name('tickets.updateDetails');
 
     Route::put('/tickets/{ticket}', [TicketController::class, 'update'])
         ->middleware('cache.headers')
@@ -193,7 +203,7 @@ Route::middleware('auth')->group(function () {
         ->middleware('cache.headers')
         ->middleware('throttle')
         ->name('tickets.change-status');
-Route::post('/tickets/{ticket}/add-comment', [TicketController::class, 'addComment'])
+    Route::post('/tickets/{ticket}/add-comment', [TicketController::class, 'addComment'])
         ->middleware('cache.headers')
         ->middleware('throttle')
         ->name('tickets.add-comment');

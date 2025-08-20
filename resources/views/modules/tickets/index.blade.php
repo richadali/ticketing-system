@@ -168,13 +168,12 @@
                                                     @endif
                                         </td>
                                         <td class="text-center">
-                                            <a href="{{ route('tickets.show', $ticket->id) }}"
-                                                class="btn btn-info btn-sm" title="View Ticket Details">
+                                            <button type="button" class="btn btn-info btn-sm view-ticket-btn"
+                                                data-bs-toggle="modal" data-bs-target="#viewTicketModal"
+                                                data-ticket-id="{{ $ticket->id }}" title="View Ticket Details">
                                                 <i class="bi bi-eye"></i>
-                                            </a>
-
-                                            @if(($role == 'Admin' || Auth::id() == $ticket->created_by) &&
-                                            $ticket->status == 'open')
+                                            </button>
+                                            @if(($role == 'Admin' || Auth::id() == $ticket->created_by))
                                             <a href="{{ route('tickets.edit', $ticket->id) }}"
                                                 class="btn btn-primary btn-sm" title="Edit Ticket">
                                                 <i class="bi bi-pencil"></i>
@@ -207,6 +206,26 @@
             </div>
         </div>
     </section>
+
+    <!-- View Ticket Modal -->
+    <div class="modal fade" id="viewTicketModal" tabindex="-1" aria-labelledby="viewTicketModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="viewTicketModalLabel">Ticket Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Ticket details will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i
             class="bi bi-arrow-up-short"></i></a>
 </main>
@@ -214,26 +233,31 @@
 <script>
     $(document).ready(function() {
         // Check if we have actual data rows (not just the empty message)
-        var hasData = $('.tickets-table tbody tr').length > 0 && 
-                      !$('.tickets-table tbody tr#empty-row').length;
-                      
+        var hasData = $('.tickets-table tbody tr').length > 0 &&
+            !$('.tickets-table tbody tr#empty-row').length;
+
         if (hasData) {
             // Create a custom sorting function for deadline + urgent
-            $.fn.dataTable.ext.order['deadline-urgent'] = function (settings, col) {
-                return this.api().column(col, {order:'index'}).nodes().map(function (td, i) {
+            $.fn.dataTable.ext.order['deadline-urgent'] = function(settings, col) {
+                return this.api().column(col, {
+                    order: 'index'
+                }).nodes().map(function(td, i) {
                     // Get the deadline date from the cell
                     var deadlineText = $(td).text().trim();
-                    var deadlineDate = deadlineText !== '-' ? deadlineText.split(' ')[0] + ' ' + deadlineText.split(' ')[1] + ' ' + deadlineText.split(' ')[2] : '9999-12-31';
-                    
+                    var deadlineDate = deadlineText !== '-' ? deadlineText.split(' ')[0] + ' ' +
+                        deadlineText.split(' ')[1] + ' ' + deadlineText.split(' ')[2] :
+                        '9999-12-31';
+
                     // Check if the row has an urgent badge
                     var row = $(td).closest('tr');
-                    var isUrgent = row.find('td:eq(1) .badge.bg-danger').length > 0 ? '0' : '1'; // 0 sorts before 1
-                    
+                    var isUrgent = row.find('td:eq(1) .badge.bg-danger').length > 0 ? '0' :
+                        '1'; // 0 sorts before 1
+
                     // Return a sortable string: deadline date + urgent flag
                     return deadlineDate + '_' + isUrgent;
                 });
             };
-            
+
             $('.tickets-table').DataTable({
                 destroy: true,
                 processing: true,
@@ -244,20 +268,24 @@
                 info: true,
                 responsive: true,
                 autoWidth: false,
-                order: [[6, 'asc']], // Sort by Deadline (ascending) by default
-                columnDefs: [
-                    { orderable: false, targets: 7 }, // Disable sorting on the Actions column
-                    {
-                        // Custom sorting for the Deadline column
-                        targets: 6,
-                        type: 'deadline-urgent'
-                    }
+                order: [
+                    [6, 'asc']
+                ], // Sort by Deadline (ascending) by default
+                columnDefs: [{
+                    orderable: false,
+                    targets: 7
+                }, // Disable sorting on the Actions column
+                {
+                    // Custom sorting for the Deadline column
+                    targets: 6,
+                    type: 'deadline-urgent'
+                }
                 ],
                 // Add custom sorting to prioritize urgent tickets
                 createdRow: function(row, data, dataIndex) {
                     // Get the urgent status from the name column
                     var isUrgent = $(row).find('td:eq(1) .badge.bg-danger').length > 0;
-                    
+
                     // Add a class to urgent rows for styling
                     if (isUrgent) {
                         $(row).addClass('urgent-ticket');
@@ -268,6 +296,29 @@
             // For empty tables, add a simple class to maintain styling without DataTable initialization
             $('.tickets-table').addClass('table-hover');
         }
+
+        // Handle modal trigger
+        $('.view-ticket-btn').on('click', function() {
+            var ticketId = $(this).data('ticket-id');
+            var modalBody = $('#viewTicketModal .modal-body');
+
+            // Clear previous content and show a loader
+            modalBody.html('<p class="text-center">Loading...</p>');
+
+            // Fetch ticket details via AJAX
+            $.ajax({
+                url: '/tickets/' + ticketId + '/details',
+                method: 'GET',
+                success: function(response) {
+                    modalBody.html(response);
+                },
+                error: function() {
+                    modalBody.html(
+                        '<p class="text-danger text-center">Failed to load ticket details.</p>'
+                        );
+                }
+            });
+        });
     });
 </script>
 

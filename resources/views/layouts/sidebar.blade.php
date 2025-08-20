@@ -17,7 +17,7 @@
     </li>
     <li class="nav-item">
       <a class="nav-link collapsed" href="{{ route('tickets.create') }}">
-        <i class="bi bi-ticket-detailed-fill"></i>
+        <i class="bi bi-plus-circle"></i>
         <span>Create Ticket</span>
       </a>
     </li>
