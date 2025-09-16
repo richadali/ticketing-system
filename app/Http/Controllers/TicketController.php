@@ -432,10 +432,6 @@ class TicketController extends Controller
         $user = Auth::user();
         $role = $user->role ? $user->role->name : 'User';
 
-        // Only admins can change status directly
-        if ($role !== 'Admin') {
-            return redirect()->route('tickets.edit', $ticket)->with('error', 'You do not have permission to change ticket status.');
-        }
 
         $request->validate([
             'status' => 'required|in:open,in_progress,closed',

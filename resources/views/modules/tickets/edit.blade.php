@@ -111,7 +111,6 @@
                             </div>
                         </form>
 
-                        @if($role == 'Admin')
                         <hr>
                         {{-- Details Row: Assigned To & Quick Status Change --}}
                         <div class="row">
@@ -127,7 +126,7 @@
                                                 {{ $ticket->assignedTo ? $ticket->assignedTo->name : 'Unassigned' }}
                                             </span>
                                         </div>
-
+                                        @if($role == 'Admin')
                                         <form action="{{ route('tickets.assign-to-admin', $ticket) }}" method="POST"
                                             class="d-flex">
                                             @csrf
@@ -144,36 +143,16 @@
                                                 <i class="bi bi-person-check"></i> Assign
                                             </button>
                                         </form>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
 
-                            {{-- Quick Status Change (Admin Only) --}}
+                            {{-- Quick Status Change --}}
                             <div class="col-md-6">
-                                <div class="card border-light shadow-sm">
-                                    <div class="card-body p-3">
-                                        <h6 class="card-title mb-2"><i class="bi bi-arrow-repeat me-1"></i> Quick
-                                            Status Change
-                                        </h6>
-                                        <form action="{{ route('tickets.change-status', $ticket) }}" method="POST"
-                                            class="d-flex">
-                                            @csrf
-                                            <select name="status" class="form-select me-2" style="width: auto;">
-                                                <option value="open" {{ $ticket->status == 'open' ? 'selected' : '' }}>
-                                                    Open
-                                                </option>
-                                                <option value="in_progress" {{ $ticket->status == 'in_progress' ?
-                                                    'selected' : '' }}>In Progress</option>
-                                                <option value="closed" {{ $ticket->status == 'closed' ? 'selected' : ''
-                                                    }}>Closed</option>
-                                            </select>
-                                            <button type="submit" class="btn btn-sm btn-primary">Update</button>
-                                        </form>
-                                    </div>
-                                </div>
+                                @include('modules.tickets._quick-status-change', ['ticket' => $ticket])
                             </div>
                         </div>
-                        @endif
 
                         @if($role === 'Admin')
                         <div class="row">
