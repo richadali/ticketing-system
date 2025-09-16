@@ -108,7 +108,7 @@ class TicketController extends Controller
             'category' => 'required|string|in:Whitelabel,Reports,Website,Email,Domain,Others',
             'sub_company' => 'required|string|in:CG,Teesprint',
             'urgent' => 'nullable|boolean',
-            'attachments.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'attachments.*' => 'nullable|file|max:2048',
         ]);
 
         $ticket = new Ticket();
@@ -296,6 +296,7 @@ class TicketController extends Controller
             'category' => 'required|string|in:Whitelabel,Reports,Website,Email,Domain,Others',
             'sub_company' => 'required|string|in:CG,Teesprint',
             'urgent' => 'nullable|boolean',
+            'attachments.*' => 'nullable|file|max:2048',
         ]);
 
         // Track changes for the activity log
@@ -322,6 +323,19 @@ class TicketController extends Controller
         $ticket->sub_company = $request->sub_company;
         $ticket->urgent = $request->has('urgent');
         $ticket->save();
+
+        // Handle attachments
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                $filename = time() . '_' . $file->getClientOriginalName();
+                $file->move(public_path('uploads/tickets'), $filename);
+
+                $attachment = new \App\Models\Attachment();
+                $attachment->ticket_id = $ticket->id;
+                $attachment->attachment_loc = 'uploads/tickets/' . $filename;
+                $attachment->save();
+            }
+        }
 
         return redirect()->route('tickets.edit', $ticket)->with('success', 'Ticket details updated successfully.');
     }

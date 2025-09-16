@@ -132,10 +132,25 @@
                                 <div class="row">
                                     @foreach($ticket->attachments as $attachment)
                                     <div class="col-md-3 mb-3">
-                                        <a href="{{ asset($attachment->attachment_loc) }}" target="_blank">
-                                            <img src="{{ asset($attachment->attachment_loc) }}"
-                                                class="img-fluid rounded" alt="Attachment">
-                                        </a>
+                                        @php
+                                            $fileExtension = pathinfo($attachment->attachment_loc, PATHINFO_EXTENSION);
+                                            $isImage = in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif']);
+                                        @endphp
+
+                                        @if($isImage)
+                                            <a href="{{ asset($attachment->attachment_loc) }}" target="_blank">
+                                                <img src="{{ asset($attachment->attachment_loc) }}" class="img-fluid rounded" alt="Attachment">
+                                            </a>
+                                        @else
+                                            <a href="{{ asset($attachment->attachment_loc) }}" target="_blank" class="d-flex flex-column align-items-center">
+                                                @if(strtolower($fileExtension) == 'pdf')
+                                                    <i class="bi bi-file-earmark-pdf" style="font-size: 48px;"></i>
+                                                @else
+                                                    <i class="bi bi-file-earmark" style="font-size: 48px;"></i>
+                                                @endif
+                                                <span>Click to open</span>
+                                            </a>
+                                        @endif
                                     </div>
                                     @endforeach
                                 </div>

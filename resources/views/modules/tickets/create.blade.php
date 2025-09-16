@@ -101,9 +101,8 @@
                                 <div class="col-md-6">
                                     <label for="attachments" class="form-label"><b>Attachments (Optional)</b></label>
                                     <input type="file" class="form-control" id="attachments" name="attachments[]"
-                                        multiple accept="image/*">
-                                    <small class="text-muted">You can upload multiple images (JPEG, PNG, JPG, GIF only,
-                                        max 2MB each).</small>
+                                        multiple>
+                                    <small class="text-muted">You can upload multiple files (max 2MB each).</small>
                                     @if ($errors->has('attachments.*'))
                                     <div class="text-danger mt-1">
                                         @foreach($errors->get('attachments.*') as $error)
@@ -133,7 +132,6 @@
         // File attachment validation
         const attachmentsInput = document.getElementById('attachments');
         const maxFileSize = 2 * 1024 * 1024; // 2MB in bytes
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
         
         attachmentsInput.addEventListener('change', function() {
             let validFiles = true;
@@ -141,12 +139,6 @@
             
             if (this.files.length > 0) {
                 Array.from(this.files).forEach(file => {
-                    if (!allowedTypes.includes(file.type)) {
-                        validFiles = false;
-                        errorMessage = `File "${file.name}" is not a valid image type. Only JPEG, PNG, JPG, and GIF are allowed.`;
-                        return;
-                    }
-                    
                     if (file.size > maxFileSize) {
                         validFiles = false;
                         errorMessage = `File "${file.name}" exceeds the maximum size of 2MB.`;

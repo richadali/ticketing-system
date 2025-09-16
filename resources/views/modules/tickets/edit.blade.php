@@ -30,7 +30,7 @@
                         </div>
                         @endif
 
-                        <form action="{{ route('tickets.updateDetails', $ticket) }}" method="POST">
+                        <form action="{{ route('tickets.updateDetails', $ticket) }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             @method('PUT')
                             <div class="row mb-3">
@@ -99,6 +99,13 @@
                                 </div>
                             </div>
 
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <label for="attachments" class="form-label"><b>Attachments</b></label>
+                                    <input type="file" class="form-control" id="attachments" name="attachments[]" multiple>
+                                    <small class="text-muted">You can upload multiple files (max 2MB each).</small>
+                                </div>
+                            </div>
                             <div class="text-center">
                                 <button type="submit" class="btn btn-primary">Update Ticket Details</button>
                             </div>
