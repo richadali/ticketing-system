@@ -10,6 +10,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\Auth\AdminRegisterController;
+use App\Http\Controllers\AttachmentController;
 use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
@@ -223,6 +224,7 @@ Route::middleware('auth')->group(function () {
         ->middleware('cache.headers')
         ->middleware('throttle')
         ->name('change-password.update');
+    Route::resource('attachments', AttachmentController::class)->only(['destroy']);
 });
 
 // Route::get('/read', function () {

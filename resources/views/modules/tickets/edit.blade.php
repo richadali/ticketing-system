@@ -106,6 +106,47 @@
                                     <small class="text-muted">You can upload multiple files (max 2MB each).</small>
                                 </div>
                             </div>
+
+                            @if($ticket->attachments->count() > 0)
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <label class="form-label"><b>Current Attachments</b></label>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        @foreach($ticket->attachments as $attachment)
+                                        <div class="attachment-preview position-relative"
+                                            id="attachment-{{ $attachment->id }}">
+                                            @php
+                                            $fileExtension = pathinfo($attachment->attachment_loc, PATHINFO_EXTENSION);
+                                            $isImage = in_array(strtolower($fileExtension), ['jpg', 'jpeg', 'png', 'gif',
+                                            'bmp']);
+                                            @endphp
+
+                                            @if($isImage)
+                                            <a href="{{ asset($attachment->attachment_loc) }}" target="_blank">
+                                                <img src="{{ asset($attachment->attachment_loc) }}" alt="Attachment"
+                                                    class="img-thumbnail" style="width: 150px; height: 150px; object-fit: cover;">
+                                            </a>
+                                            @else
+                                            <a href="{{ asset($attachment->attachment_loc) }}" target="_blank"
+                                                class="d-flex flex-column align-items-center justify-content-center p-3 border rounded"
+                                                style="width: 150px; height: 150px;">
+                                                <i class="bi bi-file-earmark-zip fs-1"></i>
+                                                <span
+                                                    class="text-muted mt-2">{{ basename($attachment->attachment_loc) }}</span>
+                                            </a>
+                                            @endif
+
+                                            <button type="button"
+                                                class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 remove-attachment-btn"
+                                                data-id="{{ $attachment->id }}" data-url="{{ route('attachments.destroy', $attachment->id) }}">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                            @endif
                             <div class="text-center">
                                 <button type="submit" class="btn btn-primary">Update Ticket Details</button>
                             </div>
@@ -219,3 +260,44 @@
 </main>
 
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.remove-attachment-btn').forEach(button => {
+            button.addEventListener('click', function (e) {
+                e.preventDefault();
+
+                if (!confirm('Are you sure you want to delete this attachment?')) {
+                    return;
+                }
+
+                const attachmentId = this.dataset.id;
+                const url = this.dataset.url;
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                fetch(url, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById(`attachment-${attachmentId}`).remove();
+                        // Optionally, show a success message
+                    } else {
+                        // Optionally, show an error message
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // Optionally, show an error message
+                });
+            });
+        });
+    });
+</script>
+@endpush

@@ -131,5 +131,5 @@
 
   <!-- Vendor JS Files -->
 </body>
-
+@stack('scripts')
 </html>
