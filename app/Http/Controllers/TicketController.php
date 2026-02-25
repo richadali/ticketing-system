@@ -45,10 +45,8 @@ class TicketController extends Controller
             $query->where('status', '!=', 'closed');
         }
 
-        // For regular users, only show tickets they created
-        if ($role !== 'Admin') {
-            $query->where('created_by', $user->id);
-        } else if ($request->has('filter')) {
+        // Apply admin-specific filters if the user is an admin
+        if ($role === 'Admin' && $request->has('filter')) {
             // Admin-specific filters
             switch ($request->filter) {
                 case 'assigned_to_me':
@@ -563,10 +561,8 @@ class TicketController extends Controller
             ->whereBetween($dateField, [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
             ->with(['assignedTo', 'creator', 'attachments']);
 
-        // For regular users, only show tickets they created
-        if ($role !== 'Admin') {
-            $query->where('created_by', $user->id);
-        }
+        // Removed restriction preventing regular users from seeing all tickets
+        // All users can now see tickets created by others in reports
 
         // Order by deadline and urgent status
         if ($status == 'closed') {

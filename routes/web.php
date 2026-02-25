@@ -23,11 +23,11 @@ Auth::routes(['register' => false]); // Disable default registration
 
 // Custom admin registration routes
 Route::get('/register-admin', [AdminRegisterController::class, 'showRegistrationForm'])
-    ->middleware('guest')
+    ->middleware('auth')
     ->name('register-admin');
 
 Route::post('/register-admin', [AdminRegisterController::class, 'register'])
-    ->middleware('guest');
+    ->middleware('auth');
 
 // OTP-based Password Reset Routes
 Route::get('/password/reset-otp', [App\Http\Controllers\Auth\OtpPasswordResetController::class, 'showRequestForm'])

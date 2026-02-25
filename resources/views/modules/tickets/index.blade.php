@@ -82,7 +82,7 @@
                             <table class="table table-bordered table-striped tickets-table" width="100%">
                                 <thead>
                                     <tr>
-                                        <th class="text-center">#</th>
+                                        <th class="text-center">Ticket ID</th>
                                         <th class="text-center">Name</th>
                                         <th class="text-center">Status</th>
                                         <th class="text-center">Assigned To</th>
@@ -95,7 +95,7 @@
                                 <tbody>
                                     @forelse ($tickets as $key => $ticket)
                                     <tr>
-                                        <td class="text-center">{{ $key + 1 }}</td>
+                                        <td class="text-center">{{ $ticket->id }}</td>
                                         <td class="text-center">
                                             {{ $ticket->name }}
                                             @if($ticket->urgent)

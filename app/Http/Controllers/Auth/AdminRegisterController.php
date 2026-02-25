@@ -29,7 +29,7 @@ class AdminRegisterController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('guest');
+        $this->middleware('auth');
     }
 
     /**
@@ -83,9 +83,11 @@ class AdminRegisterController extends Controller
     {
         $this->validator($request->all())->validate();
 
-        event(new Registered($user = $this->create($request->all())));
+        $user = $this->create($request->all());
 
-        return $this->registered($request, $user)
-            ?: redirect($this->redirectPath())->with('success', 'Admin registered successfully');
+        event(new Registered($user));
+
+        // Redirect back instead of logging the new user in
+        return redirect()->route('home')->with('success', 'Admin registered successfully');
     }
 }
