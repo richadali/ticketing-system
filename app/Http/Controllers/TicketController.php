@@ -154,9 +154,7 @@ class TicketController extends Controller
 
         $adminUsers = [];
         if ($role === 'Admin') {
-            $adminUsers = User::whereHas('role', function ($query) {
-                $query->where('name', 'Admin');
-            })->get();
+            $adminUsers = User::all();
         }
 
         return view('modules.tickets.edit', compact('ticket', 'role', 'adminUsers'));
@@ -186,10 +184,11 @@ class TicketController extends Controller
         $user = Auth::user();
         $role = $user->role ? $user->role->name : 'User';
         $isCreator = $ticket->created_by == $user->id;
+        $isAssignee = $ticket->assigned_to == $user->id;
 
-        // Only admins or the creator of the ticket can edit
-        if ($role !== 'Admin' && !$isCreator) {
-            return redirect()->route('tickets.edit', $ticket)->with('error', 'You do not have permission to edit this ticket.');
+        // Only admins, creator, or assignee can edit
+        if ($role !== 'Admin' && !$isCreator && !$isAssignee) {
+            return redirect()->route('tickets.index')->with('error', 'You do not have permission to edit this ticket.');
         }
 
         // // Only open tickets can be edited
@@ -197,9 +196,7 @@ class TicketController extends Controller
         //     return redirect()->route('tickets.show', $ticket)->with('error', 'Only tickets with "Open" status can be edited.');
         // }
 
-        $users = User::whereHas('role', function ($query) {
-            $query->where('name', 'Admin');
-        })->get();
+        $users = User::all();
 
         return view('modules.tickets.edit', compact('ticket', 'role', 'isCreator', 'users'));
     }
@@ -275,10 +272,11 @@ class TicketController extends Controller
         $user = Auth::user();
         $role = $user->role ? $user->role->name : 'User';
         $isCreator = $ticket->created_by == $user->id;
+        $isAssignee = $ticket->assigned_to == $user->id;
 
-        // Authorization: Only admins or the ticket creator can update details.
-        if ($role !== 'Admin' && !$isCreator) {
-            return redirect()->route('tickets.edit', $ticket)->with('error', 'You do not have permission to update this ticket.');
+        // Authorization: Only admins, the ticket creator, or assignee can update details.
+        if ($role !== 'Admin' && !$isCreator && !$isAssignee) {
+            return redirect()->route('tickets.index')->with('error', 'You do not have permission to update this ticket.');
         }
 
         // // Business Logic: Only tickets with "Open" status can be edited.
@@ -489,15 +487,15 @@ class TicketController extends Controller
         $ticket->save();
 
         // Record activity
-        $newAdmin = User::find($request->assigned_to);
-        $oldAdmin = $oldAssignee ? User::find($oldAssignee) : null;
+        $newUser = User::find($request->assigned_to);
+        $oldUser = $oldAssignee ? User::find($oldAssignee) : null;
 
         $this->recordActivity(
             $ticket,
             'assigned',
-            'Ticket was assigned to ' . $newAdmin->name,
-            $oldAdmin ? $oldAdmin->name : 'Unassigned',
-            $newAdmin->name
+            'Ticket was assigned to ' . $newUser->name,
+            $oldUser ? $oldUser->name : 'Unassigned',
+            $newUser->name
         );
 
         return redirect()->route('tickets.edit', $ticket)
@@ -632,9 +630,11 @@ class TicketController extends Controller
     {
         $user = Auth::user();
         $role = $user->role ? $user->role->name : 'User';
+        $isCreator = $ticket->created_by == $user->id;
+        $isAssignee = $ticket->assigned_to == $user->id;
 
-        // Only admins can add comments
-        if ($role !== 'Admin') {
+        // Only admins, creator, or assignee can add comments
+        if ($role !== 'Admin' && !$isCreator && !$isAssignee) {
             return redirect()->route('tickets.edit', $ticket)->with('error', 'You do not have permission to add comments.');
         }
 

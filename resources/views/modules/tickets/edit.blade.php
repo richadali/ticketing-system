@@ -172,11 +172,11 @@
                                             class="d-flex">
                                             @csrf
                                             <select name="assigned_to" class="form-select me-2" style="width: auto;">
-                                                <option value="">-- Select Admin --</option>
-                                                @foreach($users as $admin)
-                                                <option value="{{ $admin->id }}" {{ $ticket->assigned_to ==
-                                                    $admin->id ? 'selected' : '' }}>
-                                                    {{ $admin->name }}
+                                                <option value="">-- Select User --</option>
+                                                @foreach($users as $u)
+                                                <option value="{{ $u->id }}" {{ $ticket->assigned_to ==
+                                                    $u->id ? 'selected' : '' }}>
+                                                    {{ $u->name }}
                                                 </option>
                                                 @endforeach
                                             </select>
@@ -195,7 +195,7 @@
                             </div>
                         </div>
 
-                        @if($role === 'Admin')
+                        @if($role === 'Admin' || $isCreator || $ticket->assigned_to == Auth::id())
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="card">
