@@ -49,12 +49,6 @@
         <span>User Management</span>
       </a>
     </li>
-    <li class="nav-item">
-      <a class="nav-link collapsed" href="{{ route('register-admin')}}">
-        <i class="bi bi-person-plus-fill"></i>
-        <span>Register Admin</span>
-      </a>
-    </li>
     @endif
 
     @if ($role=='Advertisement' )

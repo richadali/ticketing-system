@@ -193,6 +193,7 @@ $(document).ready(function () {
                 $("#id").val(data[0]["id"]);
                 $("#name").val(data[0]["name"]);
                 $("#email").val(data[0]["email"]);
+                $("#role_id").val(data[0]["role_id"]);
                 $("#users-tab").tab("show");
                 $("#email").prop("disabled", true);
             },

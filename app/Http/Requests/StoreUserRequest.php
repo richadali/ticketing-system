@@ -8,9 +8,12 @@ class StoreUserRequest extends FormRequest
 {
     public function rules()
     {
+        // If 'id' is present, we are editing, so password is not required
+        $passwordRule = $this->has('id') ? 'nullable|min:8' : 'required|min:8';
+
         $rules = [
             'name' => 'required|string|max:255',
-            'password' => 'required|min:8'
+            'password' => $passwordRule
         ];
 
         return $rules;

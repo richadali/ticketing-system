@@ -16,15 +16,14 @@ class UserController extends Controller
     public function index()
     {
         $role   = Auth::user()->role->name;
-        return view('modules.user.user')->with(compact('role'));
+        $roles  = \App\Models\Role::all();
+        return view('modules.user.user')->with(compact('role', 'roles'));
     }
 
     public function ViewContent(Request $request)
     {
-        $sql = User::whereHas('role', function ($query) {
-            $query->where('id', 2); // role_id for user is 2    
-        })->with('role')
-            ->get();
+        // Show all users to Admin, or you might want to adjust visibility
+        $sql = User::with('role')->get();
 
         return response()->json($sql)->withHeaders([
             'Cache-Control' => 'max-age=15, public',
@@ -44,10 +43,16 @@ class UserController extends Controller
                 if ($sql_count > 0) {
                     try {
                         DB::beginTransaction();
-                        User::whereId($request->id)->update([
+                        $updateData = [
                             'name' => $this->normalizeString($request->name),
-                            'password' => Hash::make($request->password),
-                        ]);
+                            'role_id' => $request->role_id ?? 2,
+                        ];
+
+                        if ($request->filled('password')) {
+                            $updateData['password'] = Hash::make($request->password);
+                        }
+
+                        User::whereId($request->id)->update($updateData);
                         DB::commit();
                         return response()->json(["flag" => "YY"]);
                     } catch (\Exception $e) {
@@ -64,7 +69,7 @@ class UserController extends Controller
                     $User->name = $this->normalizeString($request->name);
                     $User->email = $this->normalizeString($request->email);
                     $User->password = Hash::make($request->password);
-                    $User->role_id = 2;
+                    $User->role_id = $request->role_id ?? 2;
                     $User->save();
                     DB::commit();
                     return response()->json(["flag" => "Y"]);
@@ -78,7 +83,7 @@ class UserController extends Controller
 
     public function ShowData(Request $request)
     {
-        $sql = User::select('id', 'name', 'email')
+        $sql = User::select('id', 'name', 'email', 'role_id')
             ->where('id', $request->id)
             ->get();
         return response()->json($sql);

@@ -153,15 +153,26 @@
                     <input type="email" class="form-control" id="email" name="email" required>
                   </div>
                   <div class="col-md-6">
+                    <label for="role_id" class="form-label"><b>Role</b></label>
+                    <select class="form-control" id="role_id" name="role_id" required>
+                      <option value="">Select Role</option>
+                      @if(isset($roles))
+                          @foreach($roles as $r)
+                              <option value="{{ $r->id }}">{{ $r->name }}</option>
+                          @endforeach
+                      @endif
+                    </select>
+                  </div>
+                  <div class="col-md-6">
                     <label for="name" class="form-label"><b>Password</b></label>
-                    <input id="password" type="password" class="form-control" name="password" required
+                    <input id="password" type="password" class="form-control" name="password"
                       autocomplete="new-password">
                     <span id="passwordLen-error" class="error"></span>
 
                   </div>
                   <div class="col-md-6">
                     <label for="confirm-password" class="form-label"><b>Confirm Password</b></label>
-                    <input id="confirm-password" type="password" class="form-control" name="confirm_password" required
+                    <input id="confirm-password" type="password" class="form-control" name="confirm_password"
                       autocomplete="new-password">
                     <span id="password-error" class="error"></span>
                   </div>
