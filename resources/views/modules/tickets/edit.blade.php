@@ -167,7 +167,6 @@
                                                 {{ $ticket->assignedTo ? $ticket->assignedTo->name : 'Unassigned' }}
                                             </span>
                                         </div>
-                                        @if($role == 'Admin')
                                         <form action="{{ route('tickets.assign-to-admin', $ticket) }}" method="POST"
                                             class="d-flex">
                                             @csrf
@@ -184,7 +183,6 @@
                                                 <i class="bi bi-person-check"></i> Assign
                                             </button>
                                         </form>
-                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -195,7 +193,6 @@
                             </div>
                         </div>
 
-                        @if($role === 'Admin' || $isCreator || $ticket->assigned_to == Auth::id())
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="card">
@@ -249,7 +246,6 @@
                                 </div>
                             </div>
                         </div>
-                        @endif
                     </div>
                 </div>
             </div>

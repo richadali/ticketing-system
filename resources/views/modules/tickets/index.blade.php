@@ -97,12 +97,10 @@
                                     @forelse ($tickets as $key => $ticket)
                                     <tr>
                                         <td class="text-center">
-                                            @if(($role == 'Admin' || Auth::id() == $ticket->created_by))
                                             <a href="{{ route('tickets.edit', $ticket->id) }}"
                                                 class="btn btn-primary btn-sm" title="Edit Ticket">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            @endif
                                         </td>
                                         <td class="text-center">{{ $ticket->id }}</td>
                                         <td class="text-center">

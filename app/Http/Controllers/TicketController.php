@@ -184,12 +184,7 @@ class TicketController extends Controller
         $user = Auth::user();
         $role = $user->role ? $user->role->name : 'User';
         $isCreator = $ticket->created_by == $user->id;
-        $isAssignee = $ticket->assigned_to == $user->id;
 
-        // Only admins, creator, or assignee can edit
-        if ($role !== 'Admin' && !$isCreator && !$isAssignee) {
-            return redirect()->route('tickets.index')->with('error', 'You do not have permission to edit this ticket.');
-        }
 
         // // Only open tickets can be edited
         // if ($ticket->status !== 'open') {
@@ -272,12 +267,6 @@ class TicketController extends Controller
         $user = Auth::user();
         $role = $user->role ? $user->role->name : 'User';
         $isCreator = $ticket->created_by == $user->id;
-        $isAssignee = $ticket->assigned_to == $user->id;
-
-        // Authorization: Only admins, the ticket creator, or assignee can update details.
-        if ($role !== 'Admin' && !$isCreator && !$isAssignee) {
-            return redirect()->route('tickets.index')->with('error', 'You do not have permission to update this ticket.');
-        }
 
         // // Business Logic: Only tickets with "Open" status can be edited.
         // if ($ticket->status !== 'open') {
@@ -475,12 +464,6 @@ class TicketController extends Controller
         $user = Auth::user();
         $role = $user->role ? $user->role->name : 'User';
 
-        // Check permissions
-        if ($role !== 'Admin') {
-            return redirect()->route('tickets.edit', $ticket)
-                ->with('error', 'Only admins can assign tickets.');
-        }
-
         // Update ticket
         $oldAssignee = $ticket->assigned_to;
         $ticket->assigned_to = $request->assigned_to;
@@ -630,13 +613,6 @@ class TicketController extends Controller
     {
         $user = Auth::user();
         $role = $user->role ? $user->role->name : 'User';
-        $isCreator = $ticket->created_by == $user->id;
-        $isAssignee = $ticket->assigned_to == $user->id;
-
-        // Only admins, creator, or assignee can add comments
-        if ($role !== 'Admin' && !$isCreator && !$isAssignee) {
-            return redirect()->route('tickets.edit', $ticket)->with('error', 'You do not have permission to add comments.');
-        }
 
         $request->validate([
             'comment' => 'required|string',
